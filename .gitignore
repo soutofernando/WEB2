@@ -1,13 +1,5 @@
-<<<<<<< HEAD
-node_modules/
-dist/
-.env
-logs
-*.log
-=======
 node_modules/
 dist/
 .env
 *.log
 .DS_Store
->>>>>>> acee04c (feat: lab 1)
