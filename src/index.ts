@@ -1,42 +1,31 @@
-import express, { Request, Response } from "express";
+import express from "express";
 import dotenv from "dotenv";
 import sequelize from "./config/database";
-import { UserRepository } from "./repository/UserRepository";
+import { UserController } from "./controllers/UserController";
+import { ProductController } from "./controllers/ProductController";
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
 
-const userRepo = new UserRepository();
+const userController = new UserController();
+const productController = new ProductController();
 
-// Rota para criar usuário
-app.post("/users", async (req: Request, res: Response) => {
-  try {
-    const { name, email, password } = req.body;
+// Rotas CRUD de usuários
+app.post("/users", userController.createUser);
+app.get("/users", userController.getAllUsers);
+app.get("/users/:id", userController.getUserById);
+app.put("/users/:id", userController.updateUser);
+app.delete("/users/:id", userController.deleteUser);
 
-    const user = await userRepo.createUser(name, email, password);
-    return res.status(201).json(user);
-  } catch (error: any) {
-    console.error(error);
-    return res
-      .status(500)
-      .json({ message: "Erro ao criar o usuário", error: error.message });
-  }
-});
-
-// Rota para listar usuários
-app.get("/users", async (req: Request, res: Response) => {
-  try {
-    const users = await userRepo.getAllUsers();
-    return res.json(users);
-  } catch (error: any) {
-    console.error(error);
-    return res
-      .status(500)
-      .json({ message: "Erro ao obter os usuários", error: error.message });
-  }
-});
+// Rotas CRUD de produtos
+app.post("/products", productController.createProduct);
+app.get("/products", productController.getAllProducts);
+app.get("/products/category/:categoria", productController.getProductsByCategory); // Deve vir antes de /products/:id
+app.get("/products/:id", productController.getProductById);
+app.put("/products/:id", productController.updateProduct);
+app.delete("/products/:id", productController.deleteProduct);
 
 // Sincronizar banco e subir servidor
 const PORT = process.env.PORT || 3000;
