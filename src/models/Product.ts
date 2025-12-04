@@ -1,19 +1,20 @@
 import { Model, DataTypes, Optional } from "sequelize";
 import sequelize from "../config/database";
+import Categoria from "./Categoria";
+import Estoque from "./Estoque";
+import PedidoProduto from "./PedidoProduto";
 
-// 1. Atributos que existem na tabela
 export interface ProductAttributes {
   id: number;
   nome: string;
   preco: number;
-  categoria: string;
+  categoriaId: number;
+  estoqueId: number;
 }
 
-// 2. Atributos necessários para criar (id é auto incremento)
 export interface ProductCreationAttributes
   extends Optional<ProductAttributes, "id"> {}
 
-// 3. Classe do modelo
 export class Product
   extends Model<ProductAttributes, ProductCreationAttributes>
   implements ProductAttributes
@@ -21,10 +22,10 @@ export class Product
   public id!: number;
   public nome!: string;
   public preco!: number;
-  public categoria!: string;
+  public categoriaId!: number;
+  public estoqueId!: number;
 }
 
-// 4. Inicialização do modelo (mapeia pra tabela)
 Product.init(
   {
     id: {
@@ -43,9 +44,21 @@ Product.init(
         min: 0
       }
     },
-    categoria: {
-      type: DataTypes.STRING,
-      allowNull: false
+    categoriaId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: Categoria,
+        key: "id"
+      }
+    },
+    estoqueId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: Estoque,
+        key: "id"
+      }
     }
   },
   {
@@ -54,6 +67,10 @@ Product.init(
     timestamps: false
   }
 );
+
+Product.belongsTo(Categoria, { foreignKey: "categoriaId", as: "categoria" });
+Product.belongsTo(Estoque, { foreignKey: "estoqueId", as: "estoque" });
+Product.hasMany(PedidoProduto, { foreignKey: "produtoId", as: "pedidoProdutos" });
 
 export default Product;
 

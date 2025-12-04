@@ -8,7 +8,6 @@ export class UserController {
         this.userService = new UserService();
     }
 
-    // Criar um novo usuário
     createUser = async (req: Request, res: Response): Promise<Response> => {
         try {
             const { name, email, password } = req.body;
@@ -32,7 +31,6 @@ export class UserController {
         }
     };
 
-    // Listar todos os usuários
     getAllUsers = async (req: Request, res: Response): Promise<Response> => {
         try {
             const users = await this.userService.getAllUsers();
@@ -49,7 +47,6 @@ export class UserController {
         }
     };
 
-    // Buscar usuário por ID
     getUserById = async (req: Request, res: Response): Promise<Response> => {
         try {
             const id = parseInt(req.params.id);
@@ -80,7 +77,6 @@ export class UserController {
         }
     };
 
-    // Atualizar usuário
     updateUser = async (req: Request, res: Response): Promise<Response> => {
         try {
             const id = parseInt(req.params.id);
@@ -124,7 +120,6 @@ export class UserController {
         }
     };
 
-    // Deletar usuário
     deleteUser = async (req: Request, res: Response): Promise<Response> => {
         try {
             const id = parseInt(req.params.id);

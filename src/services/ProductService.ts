@@ -1,42 +1,42 @@
 import { ProductRepository } from "../repository/ProductRepository";
+import { CategoriaRepository } from "../repository/CategoriaRepository";
+import { EstoqueRepository } from "../repository/EstoqueRepository";
 import Product from "../models/Product";
 
 export class ProductService {
     private productRepository: ProductRepository;
+    private categoriaRepository: CategoriaRepository;
+    private estoqueRepository: EstoqueRepository;
 
     constructor() {
         this.productRepository = new ProductRepository();
+        this.categoriaRepository = new CategoriaRepository();
+        this.estoqueRepository = new EstoqueRepository();
     }
 
-    // Criar um novo produto
-    async createProduct(nome: string, preco: number, categoria: string): Promise<Product> {
-        // Validações básicas
-        if (!nome || !categoria) {
-            throw new Error("Nome e categoria são obrigatórios");
-        }
-
-        if (preco === undefined || preco === null) {
-            throw new Error("Preço é obrigatório");
-        }
-
+    async createProduct(nome: string, preco: number, categoriaId: number, estoqueId: number): Promise<Product> {
         if (preco < 0) {
             throw new Error("Preço não pode ser negativo");
         }
 
-        return await this.productRepository.createProduct(nome, preco, categoria);
+        const categoria = await this.categoriaRepository.getCategoriaById(categoriaId);
+        if (!categoria) {
+            throw new Error("Categoria não encontrada");
+        }
+
+        const estoque = await this.estoqueRepository.getEstoqueById(estoqueId);
+        if (!estoque) {
+            throw new Error("Estoque não encontrado");
+        }
+
+        return await this.productRepository.createProduct(nome, preco, categoriaId, estoqueId);
     }
 
-    // Listar todos os produtos
     async getAllProducts(): Promise<Product[]> {
         return await this.productRepository.getAllProducts();
     }
 
-    // Buscar produto por ID
     async getProductById(id: number): Promise<Product | null> {
-        if (!id || id <= 0) {
-            throw new Error("ID inválido");
-        }
-
         const product = await this.productRepository.getProductById(id);
         if (!product) {
             throw new Error("Produto não encontrado");
@@ -45,31 +45,41 @@ export class ProductService {
         return product;
     }
 
-    // Buscar produtos por categoria
-    async getProductsByCategory(categoria: string): Promise<Product[]> {
+    async getProductsByCategory(categoriaId: number): Promise<Product[]> {
+        const categoria = await this.categoriaRepository.getCategoriaById(categoriaId);
         if (!categoria) {
-            throw new Error("Categoria é obrigatória");
+            throw new Error("Categoria não encontrada");
         }
 
-        return await this.productRepository.getProductsByCategory(categoria);
+        return await this.productRepository.getProductsByCategory(categoriaId);
     }
 
-    // Atualizar produto
     async updateProduct(
         id: number,
         nome?: string,
         preco?: number,
-        categoria?: string
+        categoriaId?: number,
+        estoqueId?: number
     ): Promise<Product> {
-        if (!id || id <= 0) {
-            throw new Error("ID inválido");
-        }
-
         if (preco !== undefined && preco < 0) {
             throw new Error("Preço não pode ser negativo");
         }
 
-        const updatedProduct = await this.productRepository.updateProduct(id, nome, preco, categoria);
+        if (categoriaId !== undefined) {
+            const categoria = await this.categoriaRepository.getCategoriaById(categoriaId);
+            if (!categoria) {
+                throw new Error("Categoria não encontrada");
+            }
+        }
+
+        if (estoqueId !== undefined) {
+            const estoque = await this.estoqueRepository.getEstoqueById(estoqueId);
+            if (!estoque) {
+                throw new Error("Estoque não encontrado");
+            }
+        }
+
+        const updatedProduct = await this.productRepository.updateProduct(id, nome, preco, categoriaId, estoqueId);
         
         if (!updatedProduct) {
             throw new Error("Produto não encontrado");
@@ -78,12 +88,7 @@ export class ProductService {
         return updatedProduct;
     }
 
-    // Deletar produto
     async deleteProduct(id: number): Promise<boolean> {
-        if (!id || id <= 0) {
-            throw new Error("ID inválido");
-        }
-
         const deleted = await this.productRepository.deleteProduct(id);
         
         if (!deleted) {

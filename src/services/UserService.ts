@@ -8,14 +8,7 @@ export class UserService {
         this.userRepository = new UserRepository();
     }
 
-    // Criar um novo usuário
     async createUser(name: string, email: string, password: string): Promise<User> {
-        // Validações básicas
-        if (!name || !email || !password) {
-            throw new Error("Nome, email e senha são obrigatórios");
-        }
-
-        // Verificar se o email já existe
         const existingUser = await this.userRepository.getUserByEmail(email);
         
         if (existingUser) {
@@ -25,17 +18,11 @@ export class UserService {
         return await this.userRepository.createUser(name, email, password);
     }
 
-    // Listar todos os usuários
     async getAllUsers(): Promise<User[]> {
         return await this.userRepository.getAllUsers();
     }
 
-    // Buscar usuário por ID
     async getUserById(id: number): Promise<User | null> {
-        if (!id || id <= 0) {
-            throw new Error("ID inválido");
-        }
-
         const user = await this.userRepository.getUserById(id);
         if (!user) {
             throw new Error("Usuário não encontrado");
@@ -44,18 +31,12 @@ export class UserService {
         return user;
     }
 
-    // Atualizar usuário
     async updateUser(
         id: number,
         name?: string,
         email?: string,
         password?: string
     ): Promise<User> {
-        if (!id || id <= 0) {
-            throw new Error("ID inválido");
-        }
-
-        // Verificar se o email já está em uso por outro usuário
         if (email) {
             const existingUser = await this.userRepository.getUserByEmail(email);
             
@@ -73,12 +54,7 @@ export class UserService {
         return updatedUser;
     }
 
-    // Deletar usuário
     async deleteUser(id: number): Promise<boolean> {
-        if (!id || id <= 0) {
-            throw new Error("ID inválido");
-        }
-
         const deleted = await this.userRepository.deleteUser(id);
         
         if (!deleted) {

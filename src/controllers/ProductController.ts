@@ -8,31 +8,42 @@ export class ProductController {
         this.productService = new ProductService();
     }
 
-    // Criar um novo produto
     createProduct = async (req: Request, res: Response): Promise<Response> => {
         try {
-            const { nome, preco, categoria } = req.body;
+            const { nome, preco, categoriaId, estoqueId } = req.body;
 
-            if (!nome || !categoria || preco === undefined || preco === null) {
+            if (!nome || categoriaId === undefined || estoqueId === undefined || preco === undefined || preco === null) {
                 return res.status(400).json({
-                    message: "Nome, preço e categoria são obrigatórios"
+                    message: "Nome, preço, categoriaId e estoqueId são obrigatórios"
                 });
             }
 
-            const product = await this.productService.createProduct(nome, preco, categoria);
+            if (isNaN(categoriaId) || isNaN(estoqueId)) {
+                return res.status(400).json({
+                    message: "categoriaId e estoqueId devem ser números válidos"
+                });
+            }
+
+            const product = await this.productService.createProduct(nome, preco, categoriaId, estoqueId);
             return res.status(201).json({
                 message: "Produto criado com sucesso",
                 product
             });
         } catch (error: any) {
             console.error("Erro ao criar produto:", error);
+            
+            if (error.message.includes("não encontrada") || error.message.includes("não encontrado")) {
+                return res.status(404).json({
+                    message: error.message
+                });
+            }
+
             return res.status(500).json({
                 message: error.message || "Erro ao criar o produto"
             });
         }
     };
 
-    // Listar todos os produtos
     getAllProducts = async (req: Request, res: Response): Promise<Response> => {
         try {
             const products = await this.productService.getAllProducts();
@@ -49,7 +60,6 @@ export class ProductController {
         }
     };
 
-    // Buscar produto por ID
     getProductById = async (req: Request, res: Response): Promise<Response> => {
         try {
             const id = parseInt(req.params.id);
@@ -80,37 +90,42 @@ export class ProductController {
         }
     };
 
-    // Buscar produtos por categoria
     getProductsByCategory = async (req: Request, res: Response): Promise<Response> => {
         try {
-            const { categoria } = req.params;
+            const categoriaId = parseInt(req.params.categoriaId);
 
-            if (!categoria) {
+            if (isNaN(categoriaId)) {
                 return res.status(400).json({
-                    message: "Categoria é obrigatória"
+                    message: "categoriaId inválido"
                 });
             }
 
-            const products = await this.productService.getProductsByCategory(categoria);
+            const products = await this.productService.getProductsByCategory(categoriaId);
             return res.status(200).json({
                 message: "Produtos obtidos com sucesso",
                 products,
                 count: products.length,
-                categoria
+                categoriaId
             });
         } catch (error: any) {
             console.error("Erro ao obter produtos por categoria:", error);
+            
+            if (error.message === "Categoria não encontrada") {
+                return res.status(404).json({
+                    message: error.message
+                });
+            }
+
             return res.status(500).json({
                 message: error.message || "Erro ao obter os produtos"
             });
         }
     };
 
-    // Atualizar produto
     updateProduct = async (req: Request, res: Response): Promise<Response> => {
         try {
             const id = parseInt(req.params.id);
-            const { nome, preco, categoria } = req.body;
+            const { nome, preco, categoriaId, estoqueId } = req.body;
 
             if (isNaN(id)) {
                 return res.status(400).json({
@@ -118,13 +133,25 @@ export class ProductController {
                 });
             }
 
-            if (!nome && preco === undefined && !categoria) {
+            if (categoriaId !== undefined && isNaN(categoriaId)) {
+                return res.status(400).json({
+                    message: "categoriaId deve ser um número válido"
+                });
+            }
+
+            if (estoqueId !== undefined && isNaN(estoqueId)) {
+                return res.status(400).json({
+                    message: "estoqueId deve ser um número válido"
+                });
+            }
+
+            if (!nome && preco === undefined && categoriaId === undefined && estoqueId === undefined) {
                 return res.status(400).json({
                     message: "Pelo menos um campo deve ser fornecido para atualização"
                 });
             }
 
-            const updatedProduct = await this.productService.updateProduct(id, nome, preco, categoria);
+            const updatedProduct = await this.productService.updateProduct(id, nome, preco, categoriaId, estoqueId);
             return res.status(200).json({
                 message: "Produto atualizado com sucesso",
                 product: updatedProduct
@@ -132,7 +159,7 @@ export class ProductController {
         } catch (error: any) {
             console.error("Erro ao atualizar produto:", error);
             
-            if (error.message === "Produto não encontrado") {
+            if (error.message === "Produto não encontrado" || error.message.includes("não encontrada") || error.message.includes("não encontrado")) {
                 return res.status(404).json({
                     message: error.message
                 });
@@ -144,7 +171,6 @@ export class ProductController {
         }
     };
 
-    // Deletar produto
     deleteProduct = async (req: Request, res: Response): Promise<Response> => {
         try {
             const id = parseInt(req.params.id);

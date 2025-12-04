@@ -1,33 +1,47 @@
 import Product from "../models/Product";
+import Categoria from "../models/Categoria";
+import Estoque from "../models/Estoque";
 
 export class ProductRepository {
-    // Criar um novo produto
-    async createProduct(nome: string, preco: number, categoria: string) {
+    async createProduct(nome: string, preco: number, categoriaId: number, estoqueId: number) {
         const product = await Product.create({
             nome,
             preco,
-            categoria
+            categoriaId,
+            estoqueId
         });
         return product;
     }
 
-    // Listar todos os produtos
     async getAllProducts() {
-        return await Product.findAll();
+        return await Product.findAll({
+            include: [
+                { model: Categoria, as: "categoria" },
+                { model: Estoque, as: "estoque" }
+            ]
+        });
     }
 
-    // Buscar produto por ID
     async getProductById(id: number) {
-        return await Product.findByPk(id);
+        return await Product.findByPk(id, {
+            include: [
+                { model: Categoria, as: "categoria" },
+                { model: Estoque, as: "estoque" }
+            ]
+        });
     }
 
-    // Buscar produtos por categoria
-    async getProductsByCategory(categoria: string) {
-        return await Product.findAll({ where: { categoria } });
+    async getProductsByCategory(categoriaId: number) {
+        return await Product.findAll({
+            where: { categoriaId },
+            include: [
+                { model: Categoria, as: "categoria" },
+                { model: Estoque, as: "estoque" }
+            ]
+        });
     }
 
-    // Atualizar produto
-    async updateProduct(id: number, nome?: string, preco?: number, categoria?: string) {
+    async updateProduct(id: number, nome?: string, preco?: number, categoriaId?: number, estoqueId?: number) {
         const product = await Product.findByPk(id);
         if (!product) {
             return null;
@@ -35,13 +49,18 @@ export class ProductRepository {
 
         if (nome) product.nome = nome;
         if (preco !== undefined) product.preco = preco;
-        if (categoria) product.categoria = categoria;
+        if (categoriaId !== undefined) product.categoriaId = categoriaId;
+        if (estoqueId !== undefined) product.estoqueId = estoqueId;
 
         await product.save();
-        return product;
+        return await Product.findByPk(id, {
+            include: [
+                { model: Categoria, as: "categoria" },
+                { model: Estoque, as: "estoque" }
+            ]
+        });
     }
 
-    // Deletar produto
     async deleteProduct(id: number) {
         const product = await Product.findByPk(id);
         if (!product) {
