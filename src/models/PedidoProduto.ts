@@ -1,7 +1,5 @@
 import { Model, DataTypes, Optional } from "sequelize";
 import sequelize from "../config/database";
-import Pedido from "./Pedido";
-import Product from "./Product";
 
 export interface PedidoProdutoAttributes {
   id: number;
@@ -38,7 +36,7 @@ PedidoProduto.init(
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: Pedido,
+        model: "pedidos",
         key: "id"
       }
     },
@@ -46,7 +44,7 @@ PedidoProduto.init(
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: Product,
+        model: "products",
         key: "id"
       }
     },
@@ -79,9 +77,6 @@ PedidoProduto.init(
     timestamps: false
   }
 );
-
-PedidoProduto.belongsTo(Pedido, { foreignKey: "pedidoId", as: "pedido" });
-PedidoProduto.belongsTo(Product, { foreignKey: "produtoId", as: "produto" });
 
 export default PedidoProduto;
 

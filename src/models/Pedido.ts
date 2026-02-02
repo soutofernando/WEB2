@@ -1,7 +1,5 @@
 import { Model, DataTypes, Optional } from "sequelize";
 import sequelize from "../config/database";
-import User from "./User";
-import PedidoProduto from "./PedidoProduto";
 
 export interface PedidoAttributes {
   id: number;
@@ -36,7 +34,7 @@ Pedido.init(
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: User,
+        model: "users",
         key: "id"
       }
     },
@@ -65,9 +63,6 @@ Pedido.init(
     timestamps: false
   }
 );
-
-Pedido.belongsTo(User, { foreignKey: "usuarioId", as: "usuario" });
-Pedido.hasMany(PedidoProduto, { foreignKey: "pedidoId", as: "itens" });
 
 export default Pedido;
 

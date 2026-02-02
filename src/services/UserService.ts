@@ -1,5 +1,6 @@
 import { UserRepository } from "../repository/UserRepository";
 import User from "../models/User";
+import { hashPassword } from "../utils/auth";
 
 export class UserService {
     private userRepository: UserRepository;
@@ -15,7 +16,8 @@ export class UserService {
             throw new Error("Email já está em uso");
         }
 
-        return await this.userRepository.createUser(name, email, password);
+        const hashedPassword = await hashPassword(password);
+        return await this.userRepository.createUser(name, email, hashedPassword);
     }
 
     async getAllUsers(): Promise<User[]> {
@@ -45,7 +47,8 @@ export class UserService {
             }
         }
 
-        const updatedUser = await this.userRepository.updateUser(id, name, email, password);
+        const hashedPassword = password ? await hashPassword(password) : undefined;
+        const updatedUser = await this.userRepository.updateUser(id, name, email, hashedPassword);
         
         if (!updatedUser) {
             throw new Error("Usuário não encontrado");

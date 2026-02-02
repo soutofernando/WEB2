@@ -53,5 +53,10 @@ User.init(
   }
 );
 
+/** Busca usuário por email (usado como "username" no login). */
+export const findUserByUsername = async (username: string) => {
+  return await User.findOne({ where: { email: username } });
+};
+
 export default User;
 
