@@ -1,20 +1,27 @@
 import { ProductRepository } from "../repository/ProductRepository";
 import { CategoriaRepository } from "../repository/CategoriaRepository";
 import { EstoqueRepository } from "../repository/EstoqueRepository";
+import { PedidoRepository } from "../repository/PedidoRepository";
 import Product from "../models/Product";
 
 export class ProductService {
     private productRepository: ProductRepository;
     private categoriaRepository: CategoriaRepository;
     private estoqueRepository: EstoqueRepository;
+    private pedidoRepository: PedidoRepository;
 
     constructor() {
         this.productRepository = new ProductRepository();
         this.categoriaRepository = new CategoriaRepository();
         this.estoqueRepository = new EstoqueRepository();
+        this.pedidoRepository = new PedidoRepository();
     }
 
     async createProduct(nome: string, preco: number, categoriaId: number, estoqueId: number): Promise<Product> {
+        if (!nome || nome.trim().length < 2) {
+            throw new Error("Nome do produto deve ter pelo menos 2 caracteres");
+        }
+
         if (preco < 0) {
             throw new Error("Preço não pode ser negativo");
         }
@@ -29,7 +36,12 @@ export class ProductService {
             throw new Error("Estoque não encontrado");
         }
 
-        return await this.productRepository.createProduct(nome, preco, categoriaId, estoqueId);
+        const produtoComMesmoEstoque = await this.productRepository.getProductByEstoqueId(estoqueId);
+        if (produtoComMesmoEstoque) {
+            throw new Error(`Estoque já está vinculado ao produto "${produtoComMesmoEstoque.nome}". Cada estoque deve ser vinculado a um único produto.`);
+        }
+
+        return await this.productRepository.createProduct(nome.trim(), preco, categoriaId, estoqueId);
     }
 
     async getAllProducts(): Promise<Product[]> {
@@ -77,9 +89,18 @@ export class ProductService {
             if (!estoque) {
                 throw new Error("Estoque não encontrado");
             }
+
+            const produtoComMesmoEstoque = await this.productRepository.getProductByEstoqueId(estoqueId);
+            if (produtoComMesmoEstoque && produtoComMesmoEstoque.id !== id) {
+                throw new Error(`Estoque já está vinculado ao produto "${produtoComMesmoEstoque.nome}". Cada estoque deve ser vinculado a um único produto.`);
+            }
         }
 
-        const updatedProduct = await this.productRepository.updateProduct(id, nome, preco, categoriaId, estoqueId);
+        if (nome !== undefined && nome.trim().length < 2) {
+            throw new Error("Nome do produto deve ter pelo menos 2 caracteres");
+        }
+
+        const updatedProduct = await this.productRepository.updateProduct(id, nome?.trim(), preco, categoriaId, estoqueId);
         
         if (!updatedProduct) {
             throw new Error("Produto não encontrado");
@@ -89,10 +110,20 @@ export class ProductService {
     }
 
     async deleteProduct(id: number): Promise<boolean> {
-        const deleted = await this.productRepository.deleteProduct(id);
-        
-        if (!deleted) {
+        const product = await this.productRepository.getProductById(id);
+        if (!product) {
             throw new Error("Produto não encontrado");
+        }
+
+        const itensEmPedidos = await this.pedidoRepository.getItensByProduto(id);
+        if (itensEmPedidos.length > 0) {
+            const totalPedidos = new Set(itensEmPedidos.map((i: { pedidoId: number }) => i.pedidoId)).size;
+            throw new Error(`Produto está em ${itensEmPedidos.length} item(ns) de ${totalPedidos} pedido(s) e não pode ser excluído. Remova o produto dos pedidos antes de excluir.`);
+        }
+
+        const deleted = await this.productRepository.deleteProduct(id);
+        if (!deleted) {
+            throw new Error("Erro ao excluir o produto");
         }
 
         return true;

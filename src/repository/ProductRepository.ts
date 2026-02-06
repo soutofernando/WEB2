@@ -41,6 +41,20 @@ export class ProductRepository {
         });
     }
 
+    async getProductByEstoqueId(estoqueId: number) {
+        return await Product.findOne({ where: { estoqueId } });
+    }
+
+    async getProductsByEstoqueId(estoqueId: number) {
+        return await Product.findAll({
+            where: { estoqueId },
+            include: [
+                { model: Categoria, as: "categoria" },
+                { model: Estoque, as: "estoque" }
+            ]
+        });
+    }
+
     async updateProduct(id: number, nome?: string, preco?: number, categoriaId?: number, estoqueId?: number) {
         const product = await Product.findByPk(id);
         if (!product) {

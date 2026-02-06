@@ -31,13 +31,12 @@ export class ProductController {
             });
         } catch (error: any) {
             console.error("Erro ao criar produto:", error);
-            
-            if (error.message.includes("não encontrada") || error.message.includes("não encontrado")) {
-                return res.status(404).json({
-                    message: error.message
-                });
+            if (error.message?.includes("não encontrada") || error.message?.includes("não encontrado")) {
+                return res.status(404).json({ message: error.message });
             }
-
+            if (error.message?.includes("Nome do produto") || error.message?.includes("Estoque já está vinculado")) {
+                return res.status(400).json({ message: error.message });
+            }
             return res.status(500).json({
                 message: error.message || "Erro ao criar o produto"
             });
@@ -158,13 +157,12 @@ export class ProductController {
             });
         } catch (error: any) {
             console.error("Erro ao atualizar produto:", error);
-            
-            if (error.message === "Produto não encontrado" || error.message.includes("não encontrada") || error.message.includes("não encontrado")) {
-                return res.status(404).json({
-                    message: error.message
-                });
+            if (error.message === "Produto não encontrado" || error.message?.includes("não encontrada") || error.message?.includes("não encontrado")) {
+                return res.status(404).json({ message: error.message });
             }
-
+            if (error.message?.includes("Nome do produto") || error.message?.includes("Estoque já está vinculado")) {
+                return res.status(400).json({ message: error.message });
+            }
             return res.status(500).json({
                 message: error.message || "Erro ao atualizar o produto"
             });
@@ -187,13 +185,12 @@ export class ProductController {
             });
         } catch (error: any) {
             console.error("Erro ao deletar produto:", error);
-            
             if (error.message === "Produto não encontrado") {
-                return res.status(404).json({
-                    message: error.message
-                });
+                return res.status(404).json({ message: error.message });
             }
-
+            if (error.message?.includes("Produto está em") && error.message?.includes("pedido")) {
+                return res.status(400).json({ message: error.message });
+            }
             return res.status(500).json({
                 message: error.message || "Erro ao deletar o produto"
             });

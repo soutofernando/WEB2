@@ -25,6 +25,12 @@ export class UserController {
             });
         } catch (error: any) {
             console.error("Erro ao criar usuário:", error);
+            if (error.message?.includes("Nome deve") || error.message?.includes("Email inválido") || error.message?.includes("Senha deve")) {
+                return res.status(400).json({ message: error.message });
+            }
+            if (error.message?.includes("Email já está em uso")) {
+                return res.status(409).json({ message: error.message });
+            }
             return res.status(500).json({
                 message: error.message || "Erro ao criar o usuário"
             });
@@ -108,12 +114,12 @@ export class UserController {
                 });
             }
 
-            if (error.message.includes("Email já está em uso")) {
-                return res.status(409).json({
-                    message: error.message
-                });
+            if (error.message?.includes("Nome deve") || error.message?.includes("Email inválido") || error.message?.includes("Senha deve")) {
+                return res.status(400).json({ message: error.message });
             }
-
+            if (error.message.includes("Email já está em uso")) {
+                return res.status(409).json({ message: error.message });
+            }
             return res.status(500).json({
                 message: error.message || "Erro ao atualizar o usuário"
             });
@@ -136,16 +142,34 @@ export class UserController {
             });
         } catch (error: any) {
             console.error("Erro ao deletar usuário:", error);
-            
             if (error.message === "Usuário não encontrado") {
-                return res.status(404).json({
-                    message: error.message
-                });
+                return res.status(404).json({ message: error.message });
             }
-
+            if (error.message?.includes("Usuário possui") && error.message?.includes("pedido")) {
+                return res.status(400).json({ message: error.message });
+            }
             return res.status(500).json({
                 message: error.message || "Erro ao deletar o usuário"
             });
+        }
+    };
+
+    getUserComResumoPedidos = async (req: Request, res: Response): Promise<Response> => {
+        try {
+            const id = parseInt(req.params.id);
+            if (isNaN(id)) {
+                return res.status(400).json({ message: "ID inválido" });
+            }
+            const resultado = await this.userService.getUserComResumoPedidos(id);
+            return res.status(200).json({
+                message: "Usuário obtido com sucesso",
+                ...resultado
+            });
+        } catch (error: any) {
+            if (error.message === "Usuário não encontrado") {
+                return res.status(404).json({ message: error.message });
+            }
+            return res.status(500).json({ message: error.message || "Erro ao obter o usuário" });
         }
     };
 }

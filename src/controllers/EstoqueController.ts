@@ -31,6 +31,9 @@ export class EstoqueController {
             });
         } catch (error: any) {
             console.error("Erro ao criar estoque:", error);
+            if (error.message?.includes("Quantidade mínima não pode ser maior")) {
+                return res.status(400).json({ message: error.message });
+            }
             return res.status(500).json({
                 message: error.message || "Erro ao criar o estoque"
             });
@@ -107,13 +110,12 @@ export class EstoqueController {
             });
         } catch (error: any) {
             console.error("Erro ao atualizar estoque:", error);
-            
             if (error.message === "Estoque não encontrado") {
-                return res.status(404).json({
-                    message: error.message
-                });
+                return res.status(404).json({ message: error.message });
             }
-
+            if (error.message?.includes("Quantidade mínima não pode ser maior")) {
+                return res.status(400).json({ message: error.message });
+            }
             return res.status(500).json({
                 message: error.message || "Erro ao atualizar o estoque"
             });
@@ -136,16 +138,34 @@ export class EstoqueController {
             });
         } catch (error: any) {
             console.error("Erro ao deletar estoque:", error);
-            
             if (error.message === "Estoque não encontrado") {
-                return res.status(404).json({
-                    message: error.message
-                });
+                return res.status(404).json({ message: error.message });
             }
-
+            if (error.message?.includes("Estoque está em uso")) {
+                return res.status(400).json({ message: error.message });
+            }
             return res.status(500).json({
                 message: error.message || "Erro ao deletar o estoque"
             });
+        }
+    };
+
+    getEstoqueComProdutos = async (req: Request, res: Response): Promise<Response> => {
+        try {
+            const id = parseInt(req.params.id);
+            if (isNaN(id)) {
+                return res.status(400).json({ message: "ID inválido" });
+            }
+            const resultado = await this.estoqueService.getEstoqueComProdutos(id);
+            return res.status(200).json({
+                message: "Estoque obtido com sucesso",
+                ...resultado
+            });
+        } catch (error: any) {
+            if (error.message === "Estoque não encontrado") {
+                return res.status(404).json({ message: error.message });
+            }
+            return res.status(500).json({ message: error.message || "Erro ao obter o estoque" });
         }
     };
 }

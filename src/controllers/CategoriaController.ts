@@ -143,16 +143,34 @@ export class CategoriaController {
             });
         } catch (error: any) {
             console.error("Erro ao deletar categoria:", error);
-            
             if (error.message === "Categoria não encontrada") {
-                return res.status(404).json({
-                    message: error.message
-                });
+                return res.status(404).json({ message: error.message });
             }
-
+            if (error.message?.includes("Categoria está em uso")) {
+                return res.status(400).json({ message: error.message });
+            }
             return res.status(500).json({
                 message: error.message || "Erro ao deletar a categoria"
             });
+        }
+    };
+
+    getCategoriaComProdutos = async (req: Request, res: Response): Promise<Response> => {
+        try {
+            const id = parseInt(req.params.id);
+            if (isNaN(id)) {
+                return res.status(400).json({ message: "ID inválido" });
+            }
+            const resultado = await this.categoriaService.getCategoriaComProdutos(id);
+            return res.status(200).json({
+                message: "Categoria obtida com sucesso",
+                ...resultado
+            });
+        } catch (error: any) {
+            if (error.message === "Categoria não encontrada") {
+                return res.status(404).json({ message: error.message });
+            }
+            return res.status(500).json({ message: error.message || "Erro ao obter a categoria" });
         }
     };
 }

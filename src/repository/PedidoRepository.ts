@@ -141,6 +141,10 @@ export class PedidoRepository {
         });
     }
 
+    async getItensByProduto(produtoId: number) {
+        return await PedidoProduto.findAll({ where: { produtoId } });
+    }
+
     async removeItemFromPedido(pedidoId: number, itemId: number) {
         const item = await PedidoProduto.findOne({
             where: { id: itemId, pedidoId }

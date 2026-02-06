@@ -1,11 +1,14 @@
 import { CategoriaRepository } from "../repository/CategoriaRepository";
+import { ProductRepository } from "../repository/ProductRepository";
 import Categoria from "../models/Categoria";
 
 export class CategoriaService {
     private categoriaRepository: CategoriaRepository;
+    private productRepository: ProductRepository;
 
     constructor() {
         this.categoriaRepository = new CategoriaRepository();
+        this.productRepository = new ProductRepository();
     }
 
     async createCategoria(nome: string, descricao?: string): Promise<Categoria> {
@@ -31,6 +34,16 @@ export class CategoriaService {
         return categoria;
     }
 
+    async getCategoriaComProdutos(id: number): Promise<{ categoria: Categoria; produtos: unknown[]; totalProdutos: number }> {
+        const categoria = await this.categoriaRepository.getCategoriaById(id);
+        if (!categoria) {
+            throw new Error("Categoria não encontrada");
+        }
+
+        const produtos = await this.productRepository.getProductsByCategory(id);
+        return { categoria, produtos, totalProdutos: produtos.length };
+    }
+
     async updateCategoria(id: number, nome?: string, descricao?: string): Promise<Categoria> {
         if (nome) {
             const existingCategoria = await this.categoriaRepository.getCategoriaByNome(nome);
@@ -50,10 +63,20 @@ export class CategoriaService {
     }
 
     async deleteCategoria(id: number): Promise<boolean> {
-        const deleted = await this.categoriaRepository.deleteCategoria(id);
-        
-        if (!deleted) {
+        const categoria = await this.categoriaRepository.getCategoriaById(id);
+        if (!categoria) {
             throw new Error("Categoria não encontrada");
+        }
+
+        const produtosVinculados = await this.productRepository.getProductsByCategory(id);
+        if (produtosVinculados.length > 0) {
+            const nomes = produtosVinculados.map((p: { nome: string }) => p.nome).join(", ");
+            throw new Error(`Categoria está em uso por ${produtosVinculados.length} produto(s): ${nomes}. Remova ou altere a categoria dos produtos antes de excluir.`);
+        }
+
+        const deleted = await this.categoriaRepository.deleteCategoria(id);
+        if (!deleted) {
+            throw new Error("Erro ao excluir a categoria");
         }
 
         return true;
