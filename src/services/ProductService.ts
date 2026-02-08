@@ -1,8 +1,9 @@
-import { ProductRepository } from "../repository/ProductRepository";
+import { ProductRepository, ProductFilters } from "../repository/ProductRepository";
 import { CategoriaRepository } from "../repository/CategoriaRepository";
 import { EstoqueRepository } from "../repository/EstoqueRepository";
 import { PedidoRepository } from "../repository/PedidoRepository";
 import Product from "../models/Product";
+import { PaginationParams, PaginationResult, buildPaginationResult } from "../types/pagination";
 
 export class ProductService {
     private productRepository: ProductRepository;
@@ -46,6 +47,18 @@ export class ProductService {
 
     async getAllProducts(): Promise<Product[]> {
         return await this.productRepository.getAllProducts();
+    }
+
+    async getProductsWithFiltersAndPagination(
+        filters: ProductFilters,
+        pagination: PaginationParams
+    ): Promise<PaginationResult<Product>> {
+        const { rows, count } = await this.productRepository.getProductsWithFiltersAndPagination({
+            filters,
+            limit: pagination.limit,
+            offset: pagination.offset
+        });
+        return buildPaginationResult(rows as Product[], count, pagination.page, pagination.limit);
     }
 
     async getProductById(id: number): Promise<Product | null> {

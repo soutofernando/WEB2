@@ -1,6 +1,7 @@
-import { EstoqueRepository } from "../repository/EstoqueRepository";
+import { EstoqueRepository, EstoqueFilters } from "../repository/EstoqueRepository";
 import { ProductRepository } from "../repository/ProductRepository";
 import Estoque from "../models/Estoque";
+import { PaginationParams, PaginationResult, buildPaginationResult } from "../types/pagination";
 
 export class EstoqueService {
     private estoqueRepository: EstoqueRepository;
@@ -29,6 +30,18 @@ export class EstoqueService {
 
     async getAllEstoques(): Promise<Estoque[]> {
         return await this.estoqueRepository.getAllEstoques();
+    }
+
+    async getEstoquesWithFiltersAndPagination(
+        filters: EstoqueFilters,
+        pagination: PaginationParams
+    ): Promise<PaginationResult<Estoque>> {
+        const { rows, count } = await this.estoqueRepository.getEstoquesWithFiltersAndPagination({
+            filters,
+            limit: pagination.limit,
+            offset: pagination.offset
+        });
+        return buildPaginationResult(rows as Estoque[], count, pagination.page, pagination.limit);
     }
 
     async getEstoqueById(id: number): Promise<Estoque | null> {

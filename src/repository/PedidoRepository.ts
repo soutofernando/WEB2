@@ -1,9 +1,21 @@
+import { Op } from "sequelize";
 import Pedido from "../models/Pedido";
 import PedidoProduto from "../models/PedidoProduto";
 import Product from "../models/Product";
 import User from "../models/User";
 import Categoria from "../models/Categoria";
 import Estoque from "../models/Estoque";
+
+export interface PedidoFilters {
+    status?: string;
+    usuarioId?: number;
+}
+
+export interface PedidoListOptions {
+    filters?: PedidoFilters;
+    limit?: number;
+    offset?: number;
+}
 
 export class PedidoRepository {
     async createPedido(usuarioId: number, status?: string) {
@@ -35,6 +47,42 @@ export class PedidoRepository {
                 }
             ]
         });
+    }
+
+    async getPedidosWithFiltersAndPagination(options: PedidoListOptions) {
+        const { filters = {}, limit = 10, offset = 0 } = options;
+        const where: Record<string, unknown> = {};
+
+        if (filters.status?.trim()) {
+            where.status = filters.status.trim().toLowerCase();
+        }
+        if (filters.usuarioId !== undefined && filters.usuarioId !== null) {
+            where.usuarioId = filters.usuarioId;
+        }
+
+        const { count, rows } = await Pedido.findAndCountAll({
+            where: Object.keys(where).length ? where : undefined,
+            include: [
+                { model: User, as: "usuario" },
+                {
+                    model: PedidoProduto,
+                    as: "itens",
+                    include: [
+                        {
+                            model: Product,
+                            as: "produto",
+                            include: [
+                                { model: Categoria, as: "categoria" },
+                                { model: Estoque, as: "estoque" }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            limit,
+            offset
+        });
+        return { rows, count };
     }
 
     async getPedidoById(id: number) {

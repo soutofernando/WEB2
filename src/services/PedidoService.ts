@@ -1,9 +1,10 @@
-import { PedidoRepository } from "../repository/PedidoRepository";
+import { PedidoRepository, PedidoFilters } from "../repository/PedidoRepository";
 import { ProductRepository } from "../repository/ProductRepository";
 import { UserRepository } from "../repository/UserRepository";
 import { EstoqueRepository } from "../repository/EstoqueRepository";
 import Pedido from "../models/Pedido";
 import PedidoProduto from "../models/PedidoProduto";
+import { PaginationParams, PaginationResult, buildPaginationResult } from "../types/pagination";
 
 export class PedidoService {
     private pedidoRepository: PedidoRepository;
@@ -72,6 +73,18 @@ export class PedidoService {
 
     async getAllPedidos(): Promise<Pedido[]> {
         return await this.pedidoRepository.getAllPedidos();
+    }
+
+    async getPedidosWithFiltersAndPagination(
+        filters: PedidoFilters,
+        pagination: PaginationParams
+    ): Promise<PaginationResult<Pedido>> {
+        const { rows, count } = await this.pedidoRepository.getPedidosWithFiltersAndPagination({
+            filters,
+            limit: pagination.limit,
+            offset: pagination.offset
+        });
+        return buildPaginationResult(rows as Pedido[], count, pagination.page, pagination.limit);
     }
 
     async getPedidoById(id: number): Promise<Pedido | null> {

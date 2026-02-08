@@ -1,4 +1,16 @@
+import { Op } from "sequelize";
+import sequelize from "../config/database";
 import Estoque from "../models/Estoque";
+
+export interface EstoqueFilters {
+    baixoEstoque?: boolean;
+}
+
+export interface EstoqueListOptions {
+    filters?: EstoqueFilters;
+    limit?: number;
+    offset?: number;
+}
 
 export class EstoqueRepository {
     async createEstoque(quantidade: number, quantidadeMinima: number) {
@@ -11,6 +23,21 @@ export class EstoqueRepository {
 
     async getAllEstoques() {
         return await Estoque.findAll();
+    }
+
+    async getEstoquesWithFiltersAndPagination(options: EstoqueListOptions) {
+        const { filters = {}, limit = 10, offset = 0 } = options;
+        const where =
+            filters.baixoEstoque === true
+                ? sequelize.where(sequelize.col("quantidade"), Op.lte, sequelize.col("quantidadeMinima"))
+                : undefined;
+
+        const { count, rows } = await Estoque.findAndCountAll({
+            where,
+            limit,
+            offset
+        });
+        return { rows, count };
     }
 
     async getEstoqueById(id: number) {

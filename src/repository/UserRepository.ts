@@ -1,4 +1,16 @@
+import { Op } from "sequelize";
 import User from "../models/User";
+
+export interface UserFilters {
+    name?: string;
+    email?: string;
+}
+
+export interface UserListOptions {
+    filters?: UserFilters;
+    limit?: number;
+    offset?: number;
+}
 
 export class UserRepository {
     async createUser(name: string, email: string, password: string) {
@@ -12,6 +24,25 @@ export class UserRepository {
 
     async getAllUsers() {
         return await User.findAll();
+    }
+
+    async getUsersWithFiltersAndPagination(options: UserListOptions) {
+        const { filters = {}, limit = 10, offset = 0 } = options;
+        const where: Record<string, unknown> = {};
+
+        if (filters.name?.trim()) {
+            where.name = { [Op.like]: `%${filters.name.trim()}%` };
+        }
+        if (filters.email?.trim()) {
+            where.email = { [Op.like]: `%${filters.email.trim()}%` };
+        }
+
+        const { count, rows } = await User.findAndCountAll({
+            where: Object.keys(where).length ? where : undefined,
+            limit,
+            offset
+        });
+        return { rows, count };
     }
 
     async getUserById(id: number) {

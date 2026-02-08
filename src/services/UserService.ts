@@ -1,7 +1,8 @@
-import { UserRepository } from "../repository/UserRepository";
+import { UserRepository, UserFilters } from "../repository/UserRepository";
 import { PedidoRepository } from "../repository/PedidoRepository";
 import User from "../models/User";
 import { hashPassword } from "../utils/auth";
+import { PaginationParams, PaginationResult, buildPaginationResult } from "../types/pagination";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SENHA_MIN_LENGTH = 6;
@@ -40,6 +41,18 @@ export class UserService {
 
     async getAllUsers(): Promise<User[]> {
         return await this.userRepository.getAllUsers();
+    }
+
+    async getUsersWithFiltersAndPagination(
+        filters: UserFilters,
+        pagination: PaginationParams
+    ): Promise<PaginationResult<User>> {
+        const { rows, count } = await this.userRepository.getUsersWithFiltersAndPagination({
+            filters,
+            limit: pagination.limit,
+            offset: pagination.offset
+        });
+        return buildPaginationResult(rows as User[], count, pagination.page, pagination.limit);
     }
 
     async getUserById(id: number): Promise<User | null> {

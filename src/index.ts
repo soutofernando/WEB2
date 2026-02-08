@@ -5,14 +5,15 @@ import "./models/associations";
 import routes from "./routes";
 import authRoutes from "./routes/authRoutes";
 import { authenticate } from "./middlewares/authMiddleware";
+import { apiRateLimiter, authRateLimiter } from "./middlewares/rateLimitMiddleware";
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
 
-app.use("/auth", authRoutes);
-app.use("/api", authenticate, routes);
+app.use("/auth", authRateLimiter, authRoutes);
+app.use("/api", apiRateLimiter, authenticate, routes);
 
 app.get("/protected", authenticate, (req, res) => {
   res.status(200).json({ message: "Você tem acesso a esta rota protegida" });

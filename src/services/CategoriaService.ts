@@ -1,6 +1,7 @@
-import { CategoriaRepository } from "../repository/CategoriaRepository";
+import { CategoriaRepository, CategoriaFilters } from "../repository/CategoriaRepository";
 import { ProductRepository } from "../repository/ProductRepository";
 import Categoria from "../models/Categoria";
+import { PaginationParams, PaginationResult, buildPaginationResult } from "../types/pagination";
 
 export class CategoriaService {
     private categoriaRepository: CategoriaRepository;
@@ -23,6 +24,18 @@ export class CategoriaService {
 
     async getAllCategorias(): Promise<Categoria[]> {
         return await this.categoriaRepository.getAllCategorias();
+    }
+
+    async getCategoriasWithFiltersAndPagination(
+        filters: CategoriaFilters,
+        pagination: PaginationParams
+    ): Promise<PaginationResult<Categoria>> {
+        const { rows, count } = await this.categoriaRepository.getCategoriasWithFiltersAndPagination({
+            filters,
+            limit: pagination.limit,
+            offset: pagination.offset
+        });
+        return buildPaginationResult(rows as Categoria[], count, pagination.page, pagination.limit);
     }
 
     async getCategoriaById(id: number): Promise<Categoria | null> {

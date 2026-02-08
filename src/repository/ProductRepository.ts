@@ -1,6 +1,20 @@
+import { Op } from "sequelize";
 import Product from "../models/Product";
 import Categoria from "../models/Categoria";
 import Estoque from "../models/Estoque";
+
+export interface ProductFilters {
+    nome?: string;
+    categoriaId?: number;
+    precoMin?: number;
+    precoMax?: number;
+}
+
+export interface ProductListOptions {
+    filters?: ProductFilters;
+    limit?: number;
+    offset?: number;
+}
 
 export class ProductRepository {
     async createProduct(nome: string, preco: number, categoriaId: number, estoqueId: number) {
@@ -20,6 +34,37 @@ export class ProductRepository {
                 { model: Estoque, as: "estoque" }
             ]
         });
+    }
+
+    async getProductsWithFiltersAndPagination(options: ProductListOptions) {
+        const { filters = {}, limit = 10, offset = 0 } = options;
+        const where: Record<string, unknown> = {};
+
+        if (filters.nome?.trim()) {
+            where.nome = { [Op.like]: `%${filters.nome.trim()}%` };
+        }
+        if (filters.categoriaId !== undefined && filters.categoriaId !== null) {
+            where.categoriaId = filters.categoriaId;
+        }
+        if (filters.precoMin !== undefined && filters.precoMin !== null) {
+            where.preco = { [Op.gte]: filters.precoMin };
+        }
+        if (filters.precoMax !== undefined && filters.precoMax !== null) {
+            where.preco = where.preco
+                ? { ...(where.preco as object), [Op.lte]: filters.precoMax }
+                : { [Op.lte]: filters.precoMax };
+        }
+
+        const { count, rows } = await Product.findAndCountAll({
+            where: Object.keys(where).length ? where : undefined,
+            include: [
+                { model: Categoria, as: "categoria" },
+                { model: Estoque, as: "estoque" }
+            ],
+            limit,
+            offset
+        });
+        return { rows, count };
     }
 
     async getProductById(id: number) {

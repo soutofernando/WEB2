@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { UserService } from "../services/UserService";
+import { parsePaginationParams } from "../types/pagination";
 
 export class UserController {
     private userService: UserService;
@@ -39,11 +40,17 @@ export class UserController {
 
     getAllUsers = async (req: Request, res: Response): Promise<Response> => {
         try {
-            const users = await this.userService.getAllUsers();
+            const pagination = parsePaginationParams(req.query as { page?: string; limit?: string });
+            const name = typeof req.query.name === "string" && req.query.name.trim() ? req.query.name.trim() : undefined;
+            const email = typeof req.query.email === "string" && req.query.email.trim() ? req.query.email.trim() : undefined;
+
+            const result = await this.userService.getUsersWithFiltersAndPagination(
+                { name, email },
+                pagination
+            );
             return res.status(200).json({
                 message: "Usuários obtidos com sucesso",
-                users,
-                count: users.length
+                ...result
             });
         } catch (error: any) {
             console.error("Erro ao obter usuários:", error);

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { ProductService } from "../services/ProductService";
+import { parsePaginationParams } from "../types/pagination";
 
 export class ProductController {
     private productService: ProductService;
@@ -45,11 +46,22 @@ export class ProductController {
 
     getAllProducts = async (req: Request, res: Response): Promise<Response> => {
         try {
-            const products = await this.productService.getAllProducts();
+            const pagination = parsePaginationParams(req.query as { page?: string; limit?: string });
+            const nome = typeof req.query.nome === "string" && req.query.nome.trim() ? req.query.nome.trim() : undefined;
+            const catId = req.query.categoriaId !== undefined ? parseInt(String(req.query.categoriaId), 10) : undefined;
+            const categoriaId = catId !== undefined && !isNaN(catId) ? catId : undefined;
+            const pMin = req.query.precoMin !== undefined ? parseFloat(String(req.query.precoMin)) : undefined;
+            const precoMin = pMin !== undefined && !isNaN(pMin) ? pMin : undefined;
+            const pMax = req.query.precoMax !== undefined ? parseFloat(String(req.query.precoMax)) : undefined;
+            const precoMax = pMax !== undefined && !isNaN(pMax) ? pMax : undefined;
+
+            const result = await this.productService.getProductsWithFiltersAndPagination(
+                { nome, categoriaId, precoMin, precoMax },
+                pagination
+            );
             return res.status(200).json({
                 message: "Produtos obtidos com sucesso",
-                products,
-                count: products.length
+                ...result
             });
         } catch (error: any) {
             console.error("Erro ao obter produtos:", error);

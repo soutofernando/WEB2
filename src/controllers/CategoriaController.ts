@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { CategoriaService } from "../services/CategoriaService";
+import { parsePaginationParams } from "../types/pagination";
 
 export class CategoriaController {
     private categoriaService: CategoriaService;
@@ -40,11 +41,16 @@ export class CategoriaController {
 
     getAllCategorias = async (req: Request, res: Response): Promise<Response> => {
         try {
-            const categorias = await this.categoriaService.getAllCategorias();
+            const pagination = parsePaginationParams(req.query as { page?: string; limit?: string });
+            const nome = typeof req.query.nome === "string" && req.query.nome.trim() ? req.query.nome.trim() : undefined;
+
+            const result = await this.categoriaService.getCategoriasWithFiltersAndPagination(
+                { nome },
+                pagination
+            );
             return res.status(200).json({
                 message: "Categorias obtidas com sucesso",
-                categorias,
-                count: categorias.length
+                ...result
             });
         } catch (error: any) {
             console.error("Erro ao obter categorias:", error);

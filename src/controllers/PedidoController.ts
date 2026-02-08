@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { PedidoService } from "../services/PedidoService";
+import { parsePaginationParams } from "../types/pagination";
 
 export class PedidoController {
     private pedidoService: PedidoService;
@@ -72,11 +73,18 @@ export class PedidoController {
 
     getAllPedidos = async (req: Request, res: Response): Promise<Response> => {
         try {
-            const pedidos = await this.pedidoService.getAllPedidos();
+            const pagination = parsePaginationParams(req.query as { page?: string; limit?: string });
+            const status = typeof req.query.status === "string" && req.query.status.trim() ? req.query.status.trim() : undefined;
+            const usuarioIdParam = req.query.usuarioId !== undefined ? parseInt(String(req.query.usuarioId), 10) : undefined;
+            const usuarioId = usuarioIdParam !== undefined && !isNaN(usuarioIdParam) ? usuarioIdParam : undefined;
+
+            const result = await this.pedidoService.getPedidosWithFiltersAndPagination(
+                { status, usuarioId },
+                pagination
+            );
             return res.status(200).json({
                 message: "Pedidos obtidos com sucesso",
-                pedidos,
-                count: pedidos.length
+                ...result
             });
         } catch (error: any) {
             console.error("Erro ao obter pedidos:", error);

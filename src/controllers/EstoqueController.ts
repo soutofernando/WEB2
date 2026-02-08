@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { EstoqueService } from "../services/EstoqueService";
+import { parsePaginationParams } from "../types/pagination";
 
 export class EstoqueController {
     private estoqueService: EstoqueService;
@@ -42,11 +43,16 @@ export class EstoqueController {
 
     getAllEstoques = async (req: Request, res: Response): Promise<Response> => {
         try {
-            const estoques = await this.estoqueService.getAllEstoques();
+            const pagination = parsePaginationParams(req.query as { page?: string; limit?: string });
+            const baixoEstoque = req.query.baixoEstoque === "true" || req.query.baixoEstoque === "1";
+
+            const result = await this.estoqueService.getEstoquesWithFiltersAndPagination(
+                { baixoEstoque: baixoEstoque || undefined },
+                pagination
+            );
             return res.status(200).json({
                 message: "Estoques obtidos com sucesso",
-                estoques,
-                count: estoques.length
+                ...result
             });
         } catch (error: any) {
             console.error("Erro ao obter estoques:", error);
