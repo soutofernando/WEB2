@@ -18,7 +18,7 @@ export const register = async (req: Request, res: Response) => {
     const user = await userService.createUser(name, email, password);
     res.status(201).json({
       message: "Usuário cadastrado com sucesso",
-      user: { id: user.id, name: user.name, email: user.email }
+      user: { id: user.id, name: user.name, email: user.email, role: user.role }
     });
   } catch (err: any) {
     if (err.message?.includes("Email já está em uso")) {
@@ -49,9 +49,13 @@ export const login = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Email ou senha inválidos" });
     }
 
-    const token = generateToken(user.id, user.email);
+    const token = generateToken(user.id, user.email, user.role);
 
-    res.status(200).json({ message: "Login realizado com sucesso", token });
+    res.status(200).json({
+      message: "Login realizado com sucesso",
+      token,
+      user: { id: user.id, name: user.name, email: user.email, role: user.role }
+    });
   } catch (err) {
     res.status(500).json({ message: "Erro ao fazer login", error: err });
   }

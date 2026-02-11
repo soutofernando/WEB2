@@ -9,7 +9,6 @@ export interface PaginationResult<T> {
     totalItems: number;
     currentPage: number;
     totalPages: number;
-    // Campos adicionais para compatibilidade
     total?: number;
     page?: number;
     limit?: number;
@@ -43,7 +42,6 @@ export function buildPaginationResult<T>(
         totalItems: total,
         currentPage: page,
         totalPages,
-        // Campos adicionais para compatibilidade
         total,
         page,
         limit,

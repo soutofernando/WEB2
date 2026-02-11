@@ -1,15 +1,16 @@
 import { Router } from "express";
 import { CategoriaController } from "../controllers/CategoriaController";
+import { authenticate, requireAdmin } from "../middlewares/authMiddleware";
 
 const router = Router();
 const categoriaController = new CategoriaController();
 
-router.post("/", categoriaController.createCategoria);
-router.get("/", categoriaController.getAllCategorias);
-router.get("/:id/produtos", categoriaController.getCategoriaComProdutos);
-router.get("/:id", categoriaController.getCategoriaById);
-router.put("/:id", categoriaController.updateCategoria);
-router.delete("/:id", categoriaController.deleteCategoria);
+router.get("/", authenticate, categoriaController.getAllCategorias);
+router.get("/:id/produtos", authenticate, categoriaController.getCategoriaComProdutos);
+router.get("/:id", authenticate, categoriaController.getCategoriaById);
+router.post("/", authenticate, requireAdmin, categoriaController.createCategoria);
+router.put("/:id", authenticate, requireAdmin, categoriaController.updateCategoria);
+router.delete("/:id", authenticate, requireAdmin, categoriaController.deleteCategoria);
 
 export default router;
 

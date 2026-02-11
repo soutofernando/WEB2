@@ -1,6 +1,6 @@
 import { UserRepository, UserFilters } from "../repository/UserRepository";
 import { PedidoRepository } from "../repository/PedidoRepository";
-import User from "../models/User";
+import User, { UserRole } from "../models/User";
 import { hashPassword } from "../utils/auth";
 import { PaginationParams, PaginationResult, buildPaginationResult } from "../types/pagination";
 
@@ -16,7 +16,7 @@ export class UserService {
         this.pedidoRepository = new PedidoRepository();
     }
 
-    async createUser(name: string, email: string, password: string): Promise<User> {
+    async createUser(name: string, email: string, password: string, role: UserRole = "user"): Promise<User> {
         if (!name || name.trim().length < 2) {
             throw new Error("Nome deve ter pelo menos 2 caracteres");
         }
@@ -29,6 +29,10 @@ export class UserService {
             throw new Error(`Senha deve ter pelo menos ${SENHA_MIN_LENGTH} caracteres`);
         }
 
+        if (role !== "user" && role !== "admin") {
+            throw new Error("Role inválido. Use 'user' ou 'admin'");
+        }
+
         const existingUser = await this.userRepository.getUserByEmail(email);
         
         if (existingUser) {
@@ -36,7 +40,7 @@ export class UserService {
         }
 
         const hashedPassword = await hashPassword(password);
-        return await this.userRepository.createUser(name, email.trim().toLowerCase(), hashedPassword);
+        return await this.userRepository.createUser(name, email.trim().toLowerCase(), hashedPassword, role);
     }
 
     async getAllUsers(): Promise<User[]> {

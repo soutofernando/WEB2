@@ -1,6 +1,11 @@
 import { Request, Response } from "express";
 import { UserService } from "../services/UserService";
 import { parsePaginationParams } from "../types/pagination";
+import User from "../models/User";
+
+function safeUser(user: User) {
+    return { id: user.id, name: user.name, email: user.email, role: user.role };
+}
 
 export class UserController {
     private userService: UserService;
@@ -11,7 +16,7 @@ export class UserController {
 
     createUser = async (req: Request, res: Response): Promise<Response> => {
         try {
-            const { name, email, password } = req.body;
+            const { name, email, password, role } = req.body;
 
             if (!name || !email || !password) {
                 return res.status(400).json({
@@ -19,10 +24,11 @@ export class UserController {
                 });
             }
 
-            const user = await this.userService.createUser(name, email, password);
+            const roleParam = req.user?.role === "admin" && role === "admin" ? "admin" : "user";
+            const user = await this.userService.createUser(name, email, password, roleParam);
             return res.status(201).json({
                 message: "Usuário criado com sucesso",
-                user
+                user: { id: user.id, name: user.name, email: user.email, role: user.role }
             });
         } catch (error: any) {
             console.error("Erro ao criar usuário:", error);
@@ -48,9 +54,11 @@ export class UserController {
                 { name, email },
                 pagination
             );
+            const safeData = result.data.map(safeUser);
             return res.status(200).json({
                 message: "Usuários obtidos com sucesso",
-                ...result
+                ...result,
+                data: safeData
             });
         } catch (error: any) {
             console.error("Erro ao obter usuários:", error);
@@ -73,7 +81,7 @@ export class UserController {
             const user = await this.userService.getUserById(id);
             return res.status(200).json({
                 message: "Usuário obtido com sucesso",
-                user
+                user: safeUser(user!)
             });
         } catch (error: any) {
             console.error("Erro ao obter usuário:", error);
@@ -110,7 +118,7 @@ export class UserController {
             const updatedUser = await this.userService.updateUser(id, name, email, password);
             return res.status(200).json({
                 message: "Usuário atualizado com sucesso",
-                user: updatedUser
+                user: safeUser(updatedUser)
             });
         } catch (error: any) {
             console.error("Erro ao atualizar usuário:", error);
@@ -170,7 +178,8 @@ export class UserController {
             const resultado = await this.userService.getUserComResumoPedidos(id);
             return res.status(200).json({
                 message: "Usuário obtido com sucesso",
-                ...resultado
+                ...resultado,
+                user: safeUser(resultado.user)
             });
         } catch (error: any) {
             if (error.message === "Usuário não encontrado") {

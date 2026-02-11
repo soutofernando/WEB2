@@ -11,19 +11,11 @@ export class PedidoController {
 
     createPedido = async (req: Request, res: Response): Promise<Response> => {
         try {
-            const { usuarioId, produtos, status } = req.body;
-
-            if (usuarioId === undefined || usuarioId === null) {
-                return res.status(400).json({
-                    message: "usuarioId é obrigatório"
-                });
-            }
-
-            if (isNaN(usuarioId)) {
-                return res.status(400).json({
-                    message: "usuarioId deve ser um número válido"
-                });
-            }
+            const { usuarioId: bodyUsuarioId, produtos, status } = req.body;
+            const isAdmin = req.user?.role === "admin";
+            const usuarioId = isAdmin && bodyUsuarioId !== undefined && bodyUsuarioId !== null
+                ? (isNaN(Number(bodyUsuarioId)) ? req.user!.id : Number(bodyUsuarioId))
+                : req.user!.id;
 
             if (!produtos || !Array.isArray(produtos) || produtos.length === 0) {
                 return res.status(400).json({
@@ -105,6 +97,11 @@ export class PedidoController {
             }
 
             const pedido = await this.pedidoService.getPedidoById(id);
+            const isAdmin = req.user?.role === "admin";
+            const isOwner = pedido && Number(pedido.usuarioId) === req.user?.id;
+            if (!isAdmin && !isOwner) {
+                return res.status(403).json({ message: "Acesso negado. Você só pode visualizar seus próprios pedidos." });
+            }
             return res.status(200).json({
                 message: "Pedido obtido com sucesso",
                 pedido
@@ -132,6 +129,11 @@ export class PedidoController {
                 return res.status(400).json({
                     message: "usuarioId inválido"
                 });
+            }
+
+            const isAdmin = req.user?.role === "admin";
+            if (!isAdmin && usuarioId !== req.user?.id) {
+                return res.status(403).json({ message: "Acesso negado. Você só pode listar seus próprios pedidos." });
             }
 
             const pedidos = await this.pedidoService.getPedidosByUsuario(usuarioId);

@@ -2,6 +2,7 @@ import { PedidoRepository, PedidoFilters } from "../repository/PedidoRepository"
 import { ProductRepository } from "../repository/ProductRepository";
 import { UserRepository } from "../repository/UserRepository";
 import { EstoqueRepository } from "../repository/EstoqueRepository";
+import { CategoriaRepository } from "../repository/CategoriaRepository";
 import Pedido from "../models/Pedido";
 import PedidoProduto from "../models/PedidoProduto";
 import { PaginationParams, PaginationResult, buildPaginationResult } from "../types/pagination";
@@ -11,12 +12,14 @@ export class PedidoService {
     private productRepository: ProductRepository;
     private userRepository: UserRepository;
     private estoqueRepository: EstoqueRepository;
+    private categoriaRepository: CategoriaRepository;
 
     constructor() {
         this.pedidoRepository = new PedidoRepository();
         this.productRepository = new ProductRepository();
         this.userRepository = new UserRepository();
         this.estoqueRepository = new EstoqueRepository();
+        this.categoriaRepository = new CategoriaRepository();
     }
 
     async createPedido(usuarioId: number, produtos: Array<{ produtoId: number; quantidade: number }>, status?: string): Promise<Pedido> {
@@ -40,6 +43,11 @@ export class PedidoService {
             const produto = await this.productRepository.getProductById(item.produtoId);
             if (!produto) {
                 throw new Error(`Produto com ID ${item.produtoId} não encontrado`);
+            }
+
+            const categoria = await this.categoriaRepository.getCategoriaById(produto.categoriaId);
+            if (!categoria) {
+                throw new Error(`Produto "${produto.nome}" não pertence a uma categoria válida. Não é possível incluir no pedido.`);
             }
 
             const estoque = await this.estoqueRepository.getEstoqueById(produto.estoqueId);

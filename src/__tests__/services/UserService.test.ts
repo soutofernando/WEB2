@@ -33,6 +33,7 @@ describe('UserService', () => {
         name: 'João Silva',
         email: 'joao@email.com',
         password: 'hashed_123456',
+        role: 'user',
       } as User;
 
       mockUserRepository.getUserByEmail = jest.fn().mockResolvedValue(null);
@@ -45,7 +46,8 @@ describe('UserService', () => {
       expect(mockUserRepository.createUser).toHaveBeenCalledWith(
         'João Silva',
         'joao@email.com',
-        'hashed_123456'
+        'hashed_123456',
+        'user'
       );
     });
 
@@ -73,6 +75,7 @@ describe('UserService', () => {
         name: 'Outro Usuário',
         email: 'joao@email.com',
         password: 'hash',
+        role: 'user',
       } as User;
 
       mockUserRepository.getUserByEmail = jest.fn().mockResolvedValue(userExistente);
@@ -91,6 +94,7 @@ describe('UserService', () => {
         name: 'João Silva',
         email: 'joao@email.com',
         password: 'hash',
+        role: 'user',
       } as User;
 
       mockUserRepository.getUserById = jest.fn().mockResolvedValue(userMock);
@@ -114,6 +118,7 @@ describe('UserService', () => {
         name: 'João Silva',
         email: 'joao@email.com',
         password: 'hash',
+        role: 'user',
       } as User;
 
       mockUserRepository.getUserById = jest.fn().mockResolvedValue(userMock);
@@ -133,6 +138,7 @@ describe('UserService', () => {
         name: 'João Silva',
         email: 'joao@email.com',
         password: 'hash',
+        role: 'user',
       } as User;
 
       const pedidosMock = [

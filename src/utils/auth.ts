@@ -18,10 +18,16 @@ export const comparePassword = async (
   return await bcrypt.compare(password, hashedPassword);
 };
 
-export const generateToken = (userId: number, username: string): string => {
-  return jwt.sign({ id: userId, username }, JWT_SECRET, { expiresIn: "1h" });
+export interface JwtPayload {
+  id: number;
+  username: string;
+  role: "user" | "admin";
+}
+
+export const generateToken = (userId: number, username: string, role: "user" | "admin"): string => {
+  return jwt.sign({ id: userId, username, role }, JWT_SECRET, { expiresIn: "1h" });
 };
 
-export const verifyToken = (token: string): any => {
-  return jwt.verify(token, JWT_SECRET);
+export const verifyToken = (token: string): JwtPayload => {
+  return jwt.verify(token, JWT_SECRET) as JwtPayload;
 };

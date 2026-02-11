@@ -6,6 +6,7 @@ import routes from "./routes";
 import authRoutes from "./routes/authRoutes";
 import { authenticate } from "./middlewares/authMiddleware";
 import { apiRateLimiter, authRateLimiter } from "./middlewares/rateLimitMiddleware";
+import { seedAdminUser } from "./config/seedAdmin";
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ const PORT = process.env.PORT || 3000;
 
 sequelize
   .sync({ force: true })
+  .then(() => seedAdminUser())
   .then(() => {
     console.log("Banco de dados conectado!");
     app.listen(PORT, () =>

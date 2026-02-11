@@ -1,5 +1,5 @@
 import { Op } from "sequelize";
-import User from "../models/User";
+import User, { UserRole } from "../models/User";
 
 export interface UserFilters {
     name?: string;
@@ -13,11 +13,12 @@ export interface UserListOptions {
 }
 
 export class UserRepository {
-    async createUser(name: string, email: string, password: string) {
+    async createUser(name: string, email: string, password: string, role: UserRole = "user") {
         const user = await User.create({
             name,
             email,
-            password
+            password,
+            role
         });
         return user;
     }
