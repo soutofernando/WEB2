@@ -3,7 +3,7 @@
     "target": "ES2019",
     "module": "commonjs",
     "moduleResolution": "node",
-    "rootDir": "./src",
+    "rootDir": "./public/src",
     "outDir": "./dist",
     "strict": true,
     "esModuleInterop": true,
@@ -12,10 +12,10 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "*": ["node_modules/*", "src/*"]
+      "*": ["node_modules/*", "public/src/*"]
     }
   },
-  "include": ["src/**/*"],
+  "include": ["public/src/**/*"],
   "exclude": ["node_modules", "dist"]
 }
 

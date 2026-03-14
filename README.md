@@ -1,1 +1,0 @@
-LOJINHA UFCG

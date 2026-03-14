@@ -1,5 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
+import path from "path";
 import sequelize from "./config/database";
 import "./models/associations";
 import routes from "./routes";
@@ -8,7 +9,8 @@ import { authenticate } from "./middlewares/authMiddleware";
 import { apiRateLimiter, authRateLimiter } from "./middlewares/rateLimitMiddleware";
 import { seedAdminUser } from "./config/seedAdmin";
 
-dotenv.config();
+// Carrega .env da raiz do monorepo (global)
+dotenv.config({ path: path.resolve(process.cwd(), "..", ".env") });
 
 const app = express();
 app.use(express.json());
