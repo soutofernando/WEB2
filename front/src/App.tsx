@@ -3,6 +3,7 @@ import { Toaster } from "sonner";
 import { useEffect } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
+import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -18,8 +19,9 @@ import RegisterPage from "./pages/RegisterPage";
 
 export default function App() {
   return (
-    <CartProvider>
-      <BrowserRouter>
+    <AuthProvider>
+      <CartProvider>
+        <BrowserRouter>
         <SeedOnMount />
         <Navbar />
         <div className="flex flex-col min-h-screen">
@@ -37,8 +39,9 @@ export default function App() {
           <Footer />
         </div>
         <Toaster richColors position="top-right" />
-      </BrowserRouter>
-    </CartProvider>
+        </BrowserRouter>
+      </CartProvider>
+    </AuthProvider>
   );
 }
 

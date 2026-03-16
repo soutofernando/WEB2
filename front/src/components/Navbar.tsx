@@ -1,17 +1,14 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
 import { useCart } from "../context/CartContext";
-import { useAuthActions } from "@convex-dev/auth/react";
+import { useAuth } from "../context/AuthContext";
 
 export default function Navbar() {
-  const user = useQuery(api.auth.loggedInUser);
+  const { user, logout } = useAuth();
   const { count } = useCart();
   const navigate = useNavigate();
-  const { signOut } = useAuthActions();
 
-  const handleLogout = async () => {
-    await signOut();
+  const handleLogout = () => {
+    logout();
     navigate("/");
   };
 
@@ -48,12 +45,20 @@ export default function Navbar() {
               )}
             </Link>
             {user ? (
-              <button
-                onClick={handleLogout}
-                className="bg-black text-white text-sm font-medium px-5 py-2.5 rounded-lg hover:bg-gray-800 transition-colors"
-              >
-                Sair
-              </button>
+              <>
+                <Link
+                  to="/profile"
+                  className="text-gray-900 hover:text-primary transition-colors text-sm font-medium"
+                >
+                  Meu perfil
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="bg-black text-white text-sm font-medium px-5 py-2.5 rounded-lg hover:bg-gray-800 transition-colors"
+                >
+                  Sair
+                </button>
+              </>
             ) : (
               <Link
                 to="/login"

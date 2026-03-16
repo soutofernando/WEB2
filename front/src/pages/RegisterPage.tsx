@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuthActions } from "@convex-dev/auth/react";
+import { useAuth } from "../context/AuthContext";
 import { toast } from "sonner";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
-  const { signIn } = useAuthActions();
+  const { register } = useAuth();
   const [form, setForm] = useState({ name: "", email: "", password: "", confirm: "" });
   const [loading, setLoading] = useState(false);
 
@@ -17,11 +17,12 @@ export default function RegisterPage() {
     }
     setLoading(true);
     try {
-      await signIn("password", { email: form.email, password: form.password, name: form.name, flow: "signUp" });
+      await register(form.name, form.email, form.password);
       toast.success("Conta criada! Bem-vindo à Lojinha UFCG 🎉");
       navigate("/");
-    } catch (err: any) {
-      toast.error(err.message || "Falha no cadastro. Tente novamente.");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Falha no cadastro. Tente novamente.";
+      toast.error(message);
     } finally {
       setLoading(false);
     }

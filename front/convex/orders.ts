@@ -4,8 +4,15 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { Id } from "./_generated/dataModel";
 
 export const myOrders = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { backendUserId: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    if (args.backendUserId != null) {
+      return await ctx.db
+        .query("orders")
+        .withIndex("by_backend_user", (q) => q.eq("backendUserId", args.backendUserId!))
+        .order("desc")
+        .collect();
+    }
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
     return await ctx.db
@@ -15,6 +22,8 @@ export const myOrders = query({
       .collect();
   },
 });
+
+const BACKEND_USER_SEP = "|||";
 
 export const create = mutation({
   args: {
@@ -38,6 +47,24 @@ export const create = mutation({
     }),
   },
   handler: async (ctx, args) => {
+    const name = args.shippingAddress.name;
+    const sepIndex = name.indexOf(BACKEND_USER_SEP);
+    if (sepIndex !== -1) {
+      const backendUserId = parseInt(name.slice(sepIndex + BACKEND_USER_SEP.length), 10);
+      if (!Number.isNaN(backendUserId)) {
+        const shippingAddress = {
+          ...args.shippingAddress,
+          name: name.slice(0, sepIndex).trim() || "Cliente",
+        };
+        return await ctx.db.insert("orders", {
+          backendUserId,
+          items: args.items,
+          total: args.total,
+          status: "pending",
+          shippingAddress,
+        });
+      }
+    }
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
     return await ctx.db.insert("orders", {

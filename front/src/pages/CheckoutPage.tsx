@@ -1,16 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext";
 import { toast } from "sonner";
 import { Id } from "../../convex/_generated/dataModel";
 
 export default function CheckoutPage() {
   const { items, total, clearCart } = useCart();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const createOrder = useMutation(api.orders.create);
-  const user = useQuery(api.auth.loggedInUser);
 
   const [form, setForm] = useState({
     name: "",
@@ -21,6 +22,12 @@ export default function CheckoutPage() {
     country: "",
   });
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setForm((prev) => ({ ...prev, name: user.name, email: user.email }));
+    }
+  }, [user]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -48,13 +55,17 @@ export default function CheckoutPage() {
           image: i.image || undefined,
         })),
         total,
-        shippingAddress: form,
+        shippingAddress: {
+          ...form,
+          name: `${form.name}|||${user.id}`,
+        },
       });
       clearCart();
       toast.success("Pedido realizado com sucesso! 🎉");
       navigate("/profile");
-    } catch (err: any) {
-      toast.error(err.message || "Falha ao realizar o pedido. Tente novamente.");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Falha ao realizar o pedido. Tente novamente.";
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }

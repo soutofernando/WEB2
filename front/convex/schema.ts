@@ -15,7 +15,8 @@ const applicationTables = {
     .searchIndex("search_name", { searchField: "name", filterFields: ["category"] }),
 
   orders: defineTable({
-    userId: v.id("users"),
+    userId: v.optional(v.id("users")),
+    backendUserId: v.optional(v.number()),
     items: v.array(
       v.object({
         productId: v.id("products"),
@@ -35,7 +36,7 @@ const applicationTables = {
       zip: v.string(),
       country: v.string(),
     }),
-  }).index("by_user", ["userId"]),
+  }).index("by_user", ["userId"]).index("by_backend_user", ["backendUserId"]),
 };
 
 export default defineSchema({

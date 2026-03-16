@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuthActions } from "@convex-dev/auth/react";
+import { useAuth } from "../context/AuthContext";
 import { toast } from "sonner";
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { signIn } = useAuthActions();
+  const { login } = useAuth();
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
 
@@ -13,11 +13,12 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await signIn("password", { email: form.email, password: form.password, flow: "signIn" });
+      await login(form.email, form.password);
       toast.success("Bem-vindo de volta!");
       navigate("/");
-    } catch (err: any) {
-      toast.error(err.message || "Falha no login. Verifique seus dados.");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Falha no login. Verifique seus dados.";
+      toast.error(message);
     } finally {
       setLoading(false);
     }

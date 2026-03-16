@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { useAuth } from "../context/AuthContext";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { toast } from "sonner";
 import { Id } from "../../convex/_generated/dataModel";
@@ -9,7 +10,7 @@ import { Id } from "../../convex/_generated/dataModel";
 const EMPTY_FORM = { name: "", price: "", description: "", category: "", image: "", stock: "" };
 
 export default function AdminPage() {
-  const user = useQuery(api.auth.loggedInUser);
+  const { user, isAdmin, isLoading } = useAuth();
   const navigate = useNavigate();
   const products = useQuery(api.products.list, {});
   const createProduct = useMutation(api.products.create);
@@ -21,13 +22,21 @@ export default function AdminPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
 
-  if (user === undefined || products === undefined) {
+  if (isLoading || products === undefined) {
     return <div className="min-h-screen bg-gray-50"><LoadingSpinner size="lg" /></div>;
   }
 
   if (!user) {
     navigate("/login");
     return null;
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p className="text-gray-600">Acesso negado. Apenas administradores podem acessar esta página.</p>
+      </div>
+    );
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
