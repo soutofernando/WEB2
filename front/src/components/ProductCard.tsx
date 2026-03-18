@@ -1,16 +1,17 @@
 import { Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { toast } from "sonner";
-import { Id } from "../../convex/_generated/dataModel";
 
 export interface Product {
-  _id: Id<"products">;
+  // Id do produto no back-end (MySQL). Mantemos o nome `_id` para não quebrar a UI.
+  _id: string;
   name: string;
   price: number;
-  description: string;
   category: string;
   image?: string;
   stock: number;
+  // Back-end não persiste description/image; UI mantém compatibilidade.
+  description?: string;
 }
 
 export default function ProductCard({ product }: { product: Product }) {

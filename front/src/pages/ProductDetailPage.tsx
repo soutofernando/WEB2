@@ -1,12 +1,11 @@
-import { useState } from "react";
-import { useParams } from "react-router-dom";
-import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { useEffect, useMemo, useState } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { toast } from "sonner";
-import { Id } from "../../convex/_generated/dataModel";
-import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { getProductById, getProducts } from "../lib/api";
+import type { Product } from "../components/ProductCard";
 
 function formatPrice(value: number) {
   return `R$ ${value.toFixed(2).replace(".", ",")}`;
@@ -15,15 +14,69 @@ function formatPrice(value: number) {
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { addItem } = useCart();
-  const product = useQuery(
-    api.products.get,
-    id ? { id: id as Id<"products"> } : "skip"
-  );
-  const allProducts = useQuery(api.products.list, {});
+  const navigate = useNavigate();
+  const { user, token, isLoading } = useAuth();
+
+  const [product, setProduct] = useState<Product | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [quantity, setQuantity] = useState(1);
 
-  const relatedProducts =
-    allProducts?.filter((p) => p._id !== product?._id).slice(0, 6) ?? [];
+  const [error, setError] = useState<string | null>(null);
+
+  const canLoad = useMemo(() => !isLoading && !!token && !!id, [isLoading, token, id]);
+
+  useEffect(() => {
+    if (!canLoad) return;
+    setError(null);
+
+    const productId = parseInt(id!, 10);
+    if (Number.isNaN(productId)) {
+      setError("ID inválido.");
+      setProduct(null);
+      setRelatedProducts([]);
+      return;
+    }
+
+    getProductById(token!, productId)
+      .then((p) => {
+        const mapped: Product = {
+          _id: String(p.id),
+          name: p.nome,
+          price: typeof p.preco === "string" ? parseFloat(p.preco) : (p.preco as number),
+          description: undefined,
+          category: p.categoria?.nome ?? "Sem categoria",
+          image: p.image ?? undefined,
+          stock: p.estoque?.quantidade ?? 0,
+        };
+        setProduct(mapped);
+
+        if (p.categoriaId != null) {
+          return getProducts({ token: token!, categoriaId: p.categoriaId, page: 1, limit: 6 }).then((ps) => {
+            const mappedRelated: Product[] = ps
+              .filter((x) => x.id !== p.id)
+              .map((x) => ({
+                _id: String(x.id),
+                name: x.nome,
+                price: typeof x.preco === "string" ? parseFloat(x.preco) : (x.preco as number),
+                description: undefined,
+                category: x.categoria?.nome ?? "Sem categoria",
+                    image: x.image ?? undefined,
+                stock: x.estoque?.quantidade ?? 0,
+              }));
+            setRelatedProducts(mappedRelated);
+          });
+        }
+
+        setRelatedProducts([]);
+        return null;
+      })
+      .catch((e) => {
+        toast.error(e instanceof Error ? e.message : "Erro ao carregar produto.");
+        setError(e instanceof Error ? e.message : "Erro ao carregar produto.");
+        setProduct(null);
+        setRelatedProducts([]);
+      });
+  }, [canLoad, id, token]);
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -37,17 +90,23 @@ export default function ProductDetailPage() {
     toast.success(`${product.name} adicionado ao carrinho!`);
   };
 
-  if (product === undefined) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <LoadingSpinner size="lg" />
       </div>
     );
   }
-  if (product === null) {
+
+  if (!user || !token) {
+    navigate("/login");
+    return null;
+  }
+
+  if (error || product === null) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center text-gray-500">
-        Produto não encontrado.
+        {error ? error : "Produto não encontrado."}
       </div>
     );
   }
@@ -96,7 +155,7 @@ export default function ProductDetailPage() {
               {formatPrice(product.price)}
             </p>
             <p className="text-sm text-gray-400 mb-6 line-clamp-2">
-              {product.description}
+              {product.description || "Descrição não disponível para este produto."}
             </p>
 
             <div className="mb-6">
@@ -168,7 +227,7 @@ export default function ProductDetailPage() {
                     {p.name}
                   </h3>
                   <p className="text-sm text-gray-400 mt-1 line-clamp-2">
-                    {p.description}
+                    {p.description || "Descrição não disponível."}
                   </p>
                   <p className="text-black font-semibold mt-2">
                     {formatPrice(p.price)}

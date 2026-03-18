@@ -37,6 +37,36 @@ export interface RegisterResponse {
   user: BackendUser;
 }
 
+export interface Categoria {
+  id: number;
+  nome: string;
+  descricao?: string;
+}
+
+export interface Estoque {
+  id: number;
+  quantidade: number;
+  quantidadeMinima: number;
+}
+
+export interface ProductBackResponse {
+  id: number;
+  nome: string;
+  preco: number | string;
+  categoriaId: number;
+  estoqueId: number;
+  image?: string | null;
+  categoria?: { id: number; nome: string };
+  estoque?: { id: number; quantidade: number; quantidadeMinima?: number };
+}
+
+export interface ProductListResponse {
+  data: ProductBackResponse[];
+  totalItems: number;
+  currentPage: number;
+  totalPages: number;
+}
+
 /** Headers com token para rotas em /api/* */
 export function getAuthHeaders(token: string | null): HeadersInit {
   const headers: HeadersInit = { "Content-Type": "application/json" };
@@ -96,4 +126,132 @@ export async function getPedidosByUsuario(usuarioId: number, token: string): Pro
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(getErrorMessage(data, "Erro ao carregar pedidos"));
   return Array.isArray(data.pedidos) ? data.pedidos : [];
+}
+
+// ── Produtos/Categorias (Back-end) ──────────────────────────────────────────────
+
+export async function getCategorias(token: string): Promise<Categoria[]> {
+  const res = await fetch(`${API_BASE}/api/categorias`, {
+    headers: getAuthHeaders(token),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(getErrorMessage(data, "Erro ao carregar categorias"));
+  // O controller retorna { data, totalItems, ... }
+  return Array.isArray(data.data) ? (data.data as Categoria[]) : [];
+}
+
+export async function getProducts(options: {
+  token: string;
+  search?: string;
+  categoriaId?: number;
+  page?: number;
+  limit?: number;
+}): Promise<ProductBackResponse[]> {
+  const { token, search, categoriaId, page = 1, limit = 100 } = options;
+  const params = new URLSearchParams();
+  params.set("page", String(page));
+  params.set("limit", String(limit));
+  if (search && search.trim().length > 1) params.set("nome", search.trim());
+  if (categoriaId != null) params.set("categoriaId", String(categoriaId));
+
+  const res = await fetch(`${API_BASE}/api/products?${params.toString()}`, {
+    headers: getAuthHeaders(token),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(getErrorMessage(data, "Erro ao carregar produtos"));
+  // O controller retorna { data, totalItems, ... }
+  return Array.isArray(data.data) ? (data.data as ProductBackResponse[]) : [];
+}
+
+export async function getProductById(token: string, id: number): Promise<ProductBackResponse> {
+  const res = await fetch(`${API_BASE}/api/products/${id}`, {
+    headers: getAuthHeaders(token),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(getErrorMessage(data, "Erro ao carregar produto"));
+  return data.product as ProductBackResponse;
+}
+
+// ── Admin: Estoques e Produtos ─────────────────────────────────────────────────
+
+export async function adminCreateEstoque(token: string, estoque: { quantidade: number; quantidadeMinima: number }): Promise<Estoque> {
+  const res = await fetch(`${API_BASE}/api/estoques`, {
+    method: "POST",
+    headers: getAuthHeaders(token),
+    body: JSON.stringify(estoque),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(getErrorMessage(data, "Erro ao criar estoque"));
+  return data.estoque as Estoque;
+}
+
+export async function adminUpdateEstoque(
+  token: string,
+  id: number,
+  estoque: { quantidade?: number; quantidadeMinima?: number }
+): Promise<Estoque> {
+  const res = await fetch(`${API_BASE}/api/estoques/${id}`, {
+    method: "PUT",
+    headers: getAuthHeaders(token),
+    body: JSON.stringify(estoque),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(getErrorMessage(data, "Erro ao atualizar estoque"));
+  return data.estoque as Estoque;
+}
+
+export async function adminCreateProduct(
+  token: string,
+  product: { nome: string; preco: number; categoriaId: number; estoqueId: number; image?: string | null }
+) {
+  const res = await fetch(`${API_BASE}/api/products`, {
+    method: "POST",
+    headers: getAuthHeaders(token),
+    body: JSON.stringify(product),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(getErrorMessage(data, "Erro ao criar produto"));
+  return data.product ?? data;
+}
+
+export async function adminUpdateProduct(
+  token: string,
+  id: number,
+  product: { nome?: string; preco?: number; categoriaId?: number; estoqueId?: number; image?: string | null }
+) {
+  const res = await fetch(`${API_BASE}/api/products/${id}`, {
+    method: "PUT",
+    headers: getAuthHeaders(token),
+    body: JSON.stringify(product),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(getErrorMessage(data, "Erro ao atualizar produto"));
+  return data.product ?? data;
+}
+
+export async function adminDeleteProduct(token: string, id: number) {
+  const res = await fetch(`${API_BASE}/api/products/${id}`, {
+    method: "DELETE",
+    headers: getAuthHeaders(token),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(getErrorMessage(data, "Erro ao excluir produto"));
+  return data;
+}
+
+// ── Pedidos (Back-end) ───────────────────────────────────────────────────────
+
+export async function createPedidoBack(
+  token: string,
+  produtos: Array<{ produtoId: number; quantidade: number }>,
+  status?: string
+) {
+  const res = await fetch(`${API_BASE}/api/pedidos`, {
+    method: "POST",
+    headers: getAuthHeaders(token),
+    body: JSON.stringify({ produtos, status }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(getErrorMessage(data, "Erro ao criar pedido"));
+  return data.pedido ?? data;
 }

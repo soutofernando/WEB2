@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom";
-import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { useEffect, useMemo, useState } from "react";
 import HomeProductCard from "../components/HomeProductCard";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { useCart } from "../context/CartContext";
 import { toast } from "sonner";
 import type { Product } from "../components/ProductCard";
+import { useAuth } from "../context/AuthContext";
+import { getProducts } from "../lib/api";
 
 const FEEDBACKS = [
   { text: "Camisa muito linda!", name: "Nome", role: "Cliente da Computação", color: "bg-blue-500" },
@@ -18,12 +19,36 @@ function formatPrice(value: number) {
 }
 
 export default function HomePage() {
-  const products = useQuery(api.products.list, {});
+  const { user, token, isLoading } = useAuth();
   const { addItem } = useCart();
 
-  const featured = products?.slice(0, 3) ?? [];
-  const carouselProducts = products?.slice(0, 6) ?? [];
-  const highlightProduct = products?.[0];
+  const [products, setProducts] = useState<Product[] | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!token) return;
+    setLoading(true);
+    getProducts({ token, page: 1, limit: 100 })
+      .then((ps) =>
+        setProducts(
+          ps.map((p) => ({
+            _id: String(p.id),
+            name: p.nome,
+            price: typeof p.preco === "string" ? parseFloat(p.preco) : (p.preco as number),
+            description: undefined,
+            category: p.categoria?.nome ?? "Sem categoria",
+            image: p.image ?? undefined,
+            stock: p.estoque?.quantidade ?? 0,
+          }))
+        )
+      )
+      .catch(() => setProducts([]))
+      .finally(() => setLoading(false));
+  }, [token]);
+
+  const featured = useMemo(() => (products ?? []).slice(0, 3), [products]);
+  const carouselProducts = useMemo(() => (products ?? []).slice(0, 6), [products]);
+  const highlightProduct = (products ?? [])[0];
 
   const handleAddHighlight = (p: Product) => {
     addItem({
@@ -37,7 +62,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className=" max-h-[572px]">
+    <div className="min-h-[572px]">
       {/* Hero - imagem clicável para /products */}
       <section className="mx-4 mt-4 lg:mx-16 lg:mt-6 rounded-2xl overflow-hidden">
         <Link to="/products" className="block w-full cursor-pointer hover:opacity-95 transition-opacity">
@@ -51,7 +76,18 @@ export default function HomePage() {
 
       {/* Featured Products - Grid de 3 */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
-        {products === undefined ? (
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <LoadingSpinner size="lg" />
+          </div>
+        ) : !user || !token ? (
+          <div className="text-center py-14">
+            <p className="text-gray-600 mb-4">Faça login para ver os produtos.</p>
+            <Link to="/login" className="bg-black text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition-colors">
+              Ir para login
+            </Link>
+          </div>
+        ) : loading || products === null ? (
           <div className="flex justify-center py-12">
             <LoadingSpinner size="lg" />
           </div>
@@ -116,7 +152,13 @@ export default function HomePage() {
         <h2 className="text-2xl font-bold text-gray-900 mb-8">
           Carrosel de produtos
         </h2>
-        {products === undefined ? (
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <LoadingSpinner size="lg" />
+          </div>
+        ) : !user || !token ? (
+          <div className="text-center py-14 text-gray-500">Catálogo disponível após login.</div>
+        ) : loading || products === null ? (
           <div className="flex justify-center py-12">
             <LoadingSpinner size="lg" />
           </div>

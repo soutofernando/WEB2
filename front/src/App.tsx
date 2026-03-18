@@ -1,8 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "sonner";
-import { useEffect } from "react";
-import { useMutation } from "convex/react";
-import { api } from "../convex/_generated/api";
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import Navbar from "./components/Navbar";
@@ -22,7 +19,6 @@ export default function App() {
     <AuthProvider>
       <CartProvider>
         <BrowserRouter>
-        <SeedOnMount />
         <Navbar />
         <div className="flex flex-col min-h-screen">
           <Routes>
@@ -43,12 +39,4 @@ export default function App() {
       </CartProvider>
     </AuthProvider>
   );
-}
-
-function SeedOnMount() {
-  const seed = useMutation(api.products.seed);
-  useEffect(() => {
-    seed({}).catch(() => {});
-  }, []);
-  return null;
 }

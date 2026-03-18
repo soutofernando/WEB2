@@ -1,20 +1,79 @@
-import { useState } from "react";
-import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
 import LoadingSpinner from "../components/LoadingSpinner";
+import { useAuth } from "../context/AuthContext";
+import { getCategorias, getProducts } from "../lib/api";
+import type { Categoria } from "../lib/api";
+import type { Product } from "../components/ProductCard";
 
 export default function ProductsPage() {
   const [search, setSearch] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("Todos");
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [products, setProducts] = useState<Product[] | null>(null);
+  const [categories, setCategories] = useState<Categoria[] | null>(null);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const products = useQuery(api.products.list, {
-    category: selectedCategory !== "Todos" ? selectedCategory : undefined,
-    search: search.length > 1 ? search : undefined,
-  });
-  const categories = useQuery(api.products.categories, {});
+  const { user, token, isLoading } = useAuth();
+  const navigate = useNavigate();
 
-  const allCategories = ["Todos", ...(categories ?? [])];
+  const searchTerm = useMemo(() => {
+    const s = search.trim();
+    return s.length > 1 ? s : undefined;
+  }, [search]);
+
+  useEffect(() => {
+    if (!token) return;
+    setLoadingCategories(true);
+    setError(null);
+    getCategorias(token)
+      .then(setCategories)
+      .catch((e) => {
+        setError(e instanceof Error ? e.message : "Erro ao carregar categorias");
+        setCategories([]);
+      })
+      .finally(() => setLoadingCategories(false));
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) return;
+    setLoadingProducts(true);
+    setError(null);
+    getProducts({
+      token,
+      search: searchTerm,
+      categoriaId: selectedCategoryId ?? undefined,
+      page: 1,
+      limit: 100,
+    })
+      .then((ps) =>
+        setProducts(
+          ps.map((p) => ({
+            _id: String(p.id),
+            name: p.nome,
+            price: typeof p.preco === "string" ? parseFloat(p.preco) : (p.preco as number),
+            description: undefined,
+            category: p.categoria?.nome ?? "Sem categoria",
+            image: p.image ?? undefined,
+            stock: p.estoque?.quantidade ?? 0,
+          }))
+        )
+      )
+      .catch((e) => {
+        setError(e instanceof Error ? e.message : "Erro ao carregar produtos");
+        setProducts([]);
+      })
+      .finally(() => setLoadingProducts(false));
+  }, [token, searchTerm, selectedCategoryId]);
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (!user || !token) {
+      navigate("/login");
+    }
+  }, [isLoading, user, token]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -37,23 +96,40 @@ export default function ProductsPage() {
             />
           </div>
           <div className="flex gap-2 flex-wrap">
-            {allCategories.map((cat) => (
+            <button
+              key="all"
+              onClick={() => setSelectedCategoryId(null)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                selectedCategoryId === null
+                  ? "bg-primary text-white"
+                  : "bg-white text-gray-600 border border-gray-200 hover:border-primary hover:text-primary"
+              }`}
+            >
+              Todos
+            </button>
+            {(categories ?? []).map((cat) => (
               <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
+                key={cat.id}
+                onClick={() => setSelectedCategoryId(cat.id)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  selectedCategory === cat
+                  selectedCategoryId === cat.id
                     ? "bg-primary text-white"
                     : "bg-white text-gray-600 border border-gray-200 hover:border-primary hover:text-primary"
                 }`}
               >
-                {cat}
+                {cat.nome}
               </button>
             ))}
           </div>
         </div>
 
-        {products === undefined ? (
+        {error ? (
+          <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 text-sm mb-6">
+            {error}
+          </div>
+        ) : null}
+
+        {loadingCategories || loadingProducts || products === null ? (
           <LoadingSpinner size="lg" />
         ) : products.length === 0 ? (
           <div className="text-center py-20 text-gray-400">

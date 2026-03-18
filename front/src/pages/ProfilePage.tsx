@@ -1,7 +1,5 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
 import { useAuth } from "../context/AuthContext";
 import { getPedidosByUsuario, type Pedido } from "../lib/api";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -12,7 +10,7 @@ export type OrderDisplay = {
   date: string;
   total: number;
   status: string;
-  source: "back" | "convex";
+  source: "back";
   items?: { name: string; quantity: number; price: number }[];
 };
 
@@ -21,11 +19,6 @@ export default function ProfilePage() {
   const [backPedidos, setBackPedidos] = useState<Pedido[]>([]);
   const [backLoading, setBackLoading] = useState(true);
   const navigate = useNavigate();
-
-  const convexOrders = useQuery(
-    api.orders.myOrders,
-    user ? { backendUserId: user.id } : "skip"
-  );
 
   useEffect(() => {
     if (!user || !token) return;
@@ -46,20 +39,10 @@ export default function ProfilePage() {
       status: p.status || "pendente",
       source: "back",
     }));
-    const fromConvex: OrderDisplay[] = (convexOrders ?? []).map((o) => ({
-      id: `convex-${o._id}`,
-      date: typeof o._creationTime === "number" ? new Date(o._creationTime).toISOString() : new Date().toISOString(),
-      total: o.total ?? 0,
-      status: o.status ?? "pending",
-      source: "convex",
-      items: o.items?.map((i) => ({ name: i.name, quantity: i.quantity, price: i.price })),
-    }));
-    return [...fromBack, ...fromConvex].sort(
+    return [...fromBack].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
-  }, [backPedidos, convexOrders]);
-
-  const pedidosLoading = backLoading;
+  }, [backPedidos]);
 
   if (isLoading) {
     return (
@@ -112,7 +95,7 @@ export default function ProfilePage() {
 
         <div>
           <h2 className="text-xl font-bold text-gray-900 mb-4">Histórico de pedidos</h2>
-          {pedidosLoading && convexOrders === undefined ? (
+          {backLoading ? (
             <LoadingSpinner />
           ) : allOrders.length === 0 ? (
             <div className="bg-white rounded-container shadow p-10 text-center text-gray-400">

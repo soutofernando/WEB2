@@ -1,17 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "sonner";
-import { Id } from "../../convex/_generated/dataModel";
+import { createPedidoBack } from "../lib/api";
 
 export default function CheckoutPage() {
   const { items, total, clearCart } = useCart();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const navigate = useNavigate();
-  const createOrder = useMutation(api.orders.create);
 
   const [form, setForm] = useState({
     name: "",
@@ -35,7 +32,7 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) {
+    if (!user || !token) {
       toast.error("Faça login para finalizar o pedido.");
       navigate("/login");
       return;
@@ -46,20 +43,16 @@ export default function CheckoutPage() {
     }
     setSubmitting(true);
     try {
-      await createOrder({
-        items: items.map((i) => ({
-          productId: i.productId as Id<"products">,
-          name: i.name,
-          price: i.price,
-          quantity: i.quantity,
-          image: i.image || undefined,
-        })),
-        total,
-        shippingAddress: {
-          ...form,
-          name: `${form.name}|||${user.id}`,
-        },
-      });
+      const produtos = items.map((i) => ({
+        produtoId: parseInt(i.productId, 10),
+        quantidade: i.quantity,
+      }));
+
+      if (produtos.some((p) => Number.isNaN(p.produtoId))) {
+        throw new Error("Produto inválido no carrinho.");
+      }
+
+      await createPedidoBack(token, produtos);
       clearCart();
       toast.success("Pedido realizado com sucesso! 🎉");
       navigate("/profile");
@@ -139,7 +132,7 @@ export default function CheckoutPage() {
 
               <button
                 type="submit"
-                disabled={submitting || !user}
+                disabled={submitting || !user || !token}
                 className="w-full bg-primary text-white font-bold py-3 rounded-lg hover:bg-primary-hover transition-colors mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? "Finalizando..." : `Fazer pedido — R$ ${total.toFixed(2).replace(".", ",")}`}
