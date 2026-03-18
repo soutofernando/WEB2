@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "convex/react";
+import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../../convex/_generated/api";
 import { useAuth } from "../context/AuthContext";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -12,7 +13,9 @@ const EMPTY_FORM = { name: "", price: "", description: "", category: "", image: 
 export default function AdminPage() {
   const { user, isAdmin, isLoading } = useAuth();
   const navigate = useNavigate();
+  const { signIn } = useAuthActions();
   const products = useQuery(api.products.list, {});
+  const convexUser = useQuery(api.auth.loggedInUser, {});
   const createProduct = useMutation(api.products.create);
   const updateProduct = useMutation(api.products.update);
   const deleteProduct = useMutation(api.products.remove);
@@ -22,7 +25,18 @@ export default function AdminPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
 
-  if (isLoading || products === undefined) {
+  // As mutações de CRUD em `front/convex/products.ts` exigem um usuário autenticado no Convex.
+  // Como o login do app roda via back-end (AuthContext), garantimos uma sessão Convex aqui
+  // (apenas quando o usuário é admin no back).
+  useEffect(() => {
+    if (!isAdmin) return;
+    void signIn("anonymous").catch(() => {
+      // Se já estiver autenticado no Convex, pode falhar por motivos benignos.
+      // A autenticação efetiva vai ficar refletida em `convexUser`.
+    });
+  }, [isAdmin, signIn]);
+
+  if (isLoading || products === undefined || (isAdmin && convexUser === undefined)) {
     return <div className="min-h-screen bg-gray-50"><LoadingSpinner size="lg" /></div>;
   }
 
@@ -39,8 +53,14 @@ export default function AdminPage() {
     );
   }
 
+  const canMutateProducts = convexUser !== null;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canMutateProducts) {
+      toast.error("Autenticação do painel ainda não ficou pronta. Tente novamente em instantes.");
+      return;
+    }
     setSubmitting(true);
     const payload = {
       name: form.name,
@@ -83,6 +103,10 @@ export default function AdminPage() {
 
   const handleDelete = async (id: Id<"products">) => {
     if (!confirm("Excluir este produto?")) return;
+    if (!canMutateProducts) {
+      toast.error("Autenticação do painel ainda não ficou pronta. Tente novamente em instantes.");
+      return;
+    }
     try {
       await deleteProduct({ id });
       toast.success("Produto excluído.");
@@ -184,7 +208,7 @@ export default function AdminPage() {
                     </button>
                     <button
                       type="submit"
-                      disabled={submitting}
+                      disabled={submitting || !canMutateProducts}
                       className="flex-1 bg-primary text-white font-bold py-2.5 rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-50"
                     >
                       {submitting ? "Salvando..." : editingId ? "Atualizar" : "Criar"}
